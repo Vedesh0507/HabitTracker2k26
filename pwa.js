@@ -577,15 +577,22 @@
      * Handle install button click
      */
     function handleInstallClick() {
-        if (isIOS()) {
-            // Show iOS-specific instructions
-            showIOSInstallInstructions();
-        } else if (deferredInstallPrompt) {
-            // Trigger native install prompt
+        if (deferredInstallPrompt) {
+            // Directly trigger native install prompt (Android/Chrome/Edge)
             triggerInstall();
+        } else if (isIOS()) {
+            // Show iOS-specific instructions (Safari doesn't support beforeinstallprompt)
+            showIOSInstallInstructions();
         } else {
-            // Show manual instructions for browsers without beforeinstallprompt
-            showManualInstallInstructions();
+            // Try to trigger install anyway, or show minimal message
+            log('No install prompt available - app may already be installed or not supported');
+            // Check if already installed
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                alert('✅ App is already installed!');
+            } else {
+                // Try triggering any stored prompt
+                triggerInstall();
+            }
         }
     }
 
