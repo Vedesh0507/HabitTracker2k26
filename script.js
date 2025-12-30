@@ -3794,11 +3794,17 @@ function renderCalendar2026() {
 function openCalendarView() {
     const landingPage = document.getElementById('landing-page');
     const calendarView = document.getElementById('calendar-view');
+    const calendarNavBtn = document.getElementById('calendar-nav-btn');
     
     if (landingPage && calendarView) {
         landingPage.classList.add('hidden');
         calendarView.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
+        
+        // Hide the floating calendar button
+        if (calendarNavBtn) {
+            calendarNavBtn.style.display = 'none';
+        }
         
         // Render calendar if not already rendered
         renderCalendar2026();
@@ -3811,11 +3817,17 @@ function openCalendarView() {
 function closeCalendarView() {
     const landingPage = document.getElementById('landing-page');
     const calendarView = document.getElementById('calendar-view');
+    const calendarNavBtn = document.getElementById('calendar-nav-btn');
     
     if (landingPage && calendarView) {
         calendarView.classList.add('hidden');
         landingPage.classList.remove('hidden');
         document.body.style.overflow = '';
+        
+        // Show the floating calendar button again
+        if (calendarNavBtn) {
+            calendarNavBtn.style.display = 'flex';
+        }
     }
 }
 
