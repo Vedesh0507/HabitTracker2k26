@@ -44,6 +44,11 @@ CREATE POLICY "Users can update own last_active" ON public.users
     USING (true)  -- ID check happens in app
     WITH CHECK (true);
 
+-- Policy: Admin can delete users (for admin dashboard)
+CREATE POLICY "Allow delete for admin" ON public.users
+    FOR DELETE
+    USING (true);  -- Protected by admin password in app
+
 -- ============================================
 -- ADMIN VIEWS (for analytics dashboard)
 -- These are read-only aggregations
@@ -60,7 +65,7 @@ FROM public.users;
 
 -- Grant read access to anon role for analytics
 GRANT SELECT ON public.analytics_summary TO anon;
-GRANT SELECT, INSERT, UPDATE ON public.users TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.users TO anon;
 
 -- ============================================
 -- ADMIN VIEW: User List with Activity Status
