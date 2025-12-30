@@ -322,11 +322,13 @@
      */
     async function triggerInstall() {
         if (!deferredInstallPrompt) {
-            log('No install prompt available');
+            log('No install prompt available, showing manual instructions');
+            showDesktopInstallInstructions();
             return;
         }
 
         try {
+            log('Calling deferredInstallPrompt.prompt()...');
             // Show the native install prompt
             deferredInstallPrompt.prompt();
 
@@ -338,6 +340,8 @@
             if (outcome === 'accepted') {
                 log('App installed successfully');
                 isInstalled = true;
+                // Hide install button
+                hidePersistentInstallButton();
             }
 
             // Clear the stored prompt (can only be used once)
@@ -351,6 +355,8 @@
 
         } catch (error) {
             logError('Install failed:', error);
+            // Show manual instructions as fallback
+            showDesktopInstallInstructions();
         }
     }
 
@@ -577,23 +583,145 @@
      * Handle install button click
      */
     function handleInstallClick() {
+        log('Install button clicked');
+        log('deferredInstallPrompt:', deferredInstallPrompt ? 'available' : 'null');
+        log('isIOS:', isIOS());
+        log('isStandalone:', isInStandaloneMode());
+        
+        // Check if already installed
+        if (isInStandaloneMode()) {
+            showInstallSuccessMessage();
+            return;
+        }
+        
         if (deferredInstallPrompt) {
             // Directly trigger native install prompt (Android/Chrome/Edge)
+            log('Triggering native install prompt...');
             triggerInstall();
         } else if (isIOS()) {
             // Show iOS-specific instructions (Safari doesn't support beforeinstallprompt)
+            log('Showing iOS instructions...');
             showIOSInstallInstructions();
         } else {
-            // Try to trigger install anyway, or show minimal message
-            log('No install prompt available - app may already be installed or not supported');
-            // Check if already installed
-            if (window.matchMedia('(display-mode: standalone)').matches) {
-                alert('✅ App is already installed!');
-            } else {
-                // Try triggering any stored prompt
-                triggerInstall();
-            }
+            // Show instructions for desktop browsers (Chrome/Edge/Firefox)
+            log('Showing desktop install instructions...');
+            showDesktopInstallInstructions();
         }
+    }
+    
+    /**
+     * Show success message when app is already installed
+     */
+    function showInstallSuccessMessage() {
+        const overlay = document.createElement('div');
+        overlay.className = 'pwa-ios-modal-overlay';
+        overlay.id = 'pwa-success-modal';
+        overlay.innerHTML = `
+            <div class="pwa-ios-modal">
+                <h3>✅ Already Installed!</h3>
+                <p>Habit Tracker 2026 is already installed on your device. You can find it on your home screen or app drawer.</p>
+                <button class="pwa-ios-close" onclick="document.getElementById('pwa-success-modal').remove()">Got it!</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.remove();
+        });
+    }
+    
+    /**
+     * Show desktop browser install instructions
+     */
+    function showDesktopInstallInstructions() {
+        const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
+        const isEdge = /Edg/.test(navigator.userAgent);
+        const isFirefox = /Firefox/.test(navigator.userAgent);
+        
+        let browserName = 'your browser';
+        let steps = '';
+        
+        if (isChrome) {
+            browserName = 'Chrome';
+            steps = `
+                <div class="pwa-ios-step">
+                    <span class="pwa-ios-step-num">1</span>
+                    <span>Look for the <strong>Install icon</strong> ⊕ in the address bar (right side)</span>
+                </div>
+                <div class="pwa-ios-step">
+                    <span class="pwa-ios-step-num">2</span>
+                    <span>Or click the <strong>⋮ Menu</strong> → <strong>"Install Habit Tracker 2026"</strong></span>
+                </div>
+                <div class="pwa-ios-step">
+                    <span class="pwa-ios-step-num">3</span>
+                    <span>Click <strong>"Install"</strong> in the popup to add to your device</span>
+                </div>
+            `;
+        } else if (isEdge) {
+            browserName = 'Edge';
+            steps = `
+                <div class="pwa-ios-step">
+                    <span class="pwa-ios-step-num">1</span>
+                    <span>Look for the <strong>App available</strong> icon in the address bar</span>
+                </div>
+                <div class="pwa-ios-step">
+                    <span class="pwa-ios-step-num">2</span>
+                    <span>Or click the <strong>⋯ Menu</strong> → <strong>Apps</strong> → <strong>"Install this site as an app"</strong></span>
+                </div>
+                <div class="pwa-ios-step">
+                    <span class="pwa-ios-step-num">3</span>
+                    <span>Click <strong>"Install"</strong> to add to your device</span>
+                </div>
+            `;
+        } else if (isFirefox) {
+            browserName = 'Firefox';
+            steps = `
+                <div class="pwa-ios-step">
+                    <span class="pwa-ios-step-num">1</span>
+                    <span>Firefox has limited PWA support on desktop</span>
+                </div>
+                <div class="pwa-ios-step">
+                    <span class="pwa-ios-step-num">2</span>
+                    <span>For best experience, use <strong>Chrome</strong> or <strong>Edge</strong></span>
+                </div>
+                <div class="pwa-ios-step">
+                    <span class="pwa-ios-step-num">3</span>
+                    <span>Or bookmark this page for quick access</span>
+                </div>
+            `;
+        } else {
+            steps = `
+                <div class="pwa-ios-step">
+                    <span class="pwa-ios-step-num">1</span>
+                    <span>Look for an <strong>Install</strong> or <strong>Add to Home</strong> option in your browser menu</span>
+                </div>
+                <div class="pwa-ios-step">
+                    <span class="pwa-ios-step-num">2</span>
+                    <span>This is usually in the main menu (⋮ or ⋯)</span>
+                </div>
+                <div class="pwa-ios-step">
+                    <span class="pwa-ios-step-num">3</span>
+                    <span>For best PWA support, try <strong>Chrome</strong> or <strong>Edge</strong></span>
+                </div>
+            `;
+        }
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'pwa-ios-modal-overlay';
+        overlay.id = 'pwa-desktop-modal';
+        overlay.innerHTML = `
+            <div class="pwa-ios-modal">
+                <h3>📥 Install Habit Tracker</h3>
+                <p>To install this app using ${browserName}:</p>
+                <div class="pwa-ios-steps">
+                    ${steps}
+                </div>
+                <button class="pwa-ios-close" onclick="document.getElementById('pwa-desktop-modal').remove()">Got it!</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.remove();
+        });
     }
 
     /**
