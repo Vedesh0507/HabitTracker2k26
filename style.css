@@ -5678,7 +5678,7 @@ button.daily-space-card,
     align-items: center;
     gap: var(--spacing-sm);
     background: transparent;
-    border: none;
+    border: 1px solid var(--dark-border);
     color: var(--dark-text);
     font-size: 0.875rem;
     font-weight: 500;
@@ -5689,7 +5689,9 @@ button.daily-space-card,
 }
 
 .ds-back-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(139, 92, 246, 0.1);
+    border-color: var(--dark-accent);
+    color: var(--dark-accent);
 }
 
 /* Search Bar */
@@ -5769,7 +5771,12 @@ button.daily-space-card,
     }
     
     .ds-back-btn span {
-        display: none;
+        display: inline;
+        font-size: 0.75rem;
+    }
+    
+    .ds-back-btn {
+        padding: var(--spacing-xs) var(--spacing-sm);
     }
     
     .ds-search-bar {
