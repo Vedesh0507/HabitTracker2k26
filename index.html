@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Habit Tracker 2026 | Build Discipline. Build Freedom.</title>
+    
+    <!-- Mobile Optimization -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#8b5cf6">
+    <meta name="description" content="Track your daily habits and build consistency in 2026. Premium habit tracking with streaks, categories, heatmaps, and more.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Habit2026">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- PWA Icons -->
+    <link rel="icon" type="image/svg+xml" href="icons/icon-512x512.svg">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- ==========================================
+         USER AVATAR COMPONENT (Top-Right Corner)
+         Shows profile photo or initials fallback
+         Visible across landing and tracker views
+         ========================================== -->
+    <div class="user-avatar-container" id="user-avatar-container">
+        <div class="user-avatar" id="user-avatar">
+            <!-- Avatar content injected by JS (image or initials) -->
+        </div>
+        <div class="user-avatar-glow"></div>
+    </div>
+
+    <!-- ==========================================
+         CALENDAR BUTTON (Top-Left Corner)
+         Opens the 2026 Calendar view
+         ========================================== -->
+    <button class="calendar-nav-btn" id="calendar-nav-btn" title="2026 Calendar">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+    </button>
+
+    <!-- ==================== LANDING PAGE ==================== -->
+    <div class="landing-page" id="landing-page">
+        
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-background">
+                <div class="hero-overlay"></div>
+                <div class="hero-gradient"></div>
+            </div>
+            
+            <div class="hero-content">
+                <!-- Live Clock Display -->
+                <div class="live-clock-container" id="live-clock-container">
+                    <div class="live-clock" id="live-clock">
+                        <span class="clock-time" id="clock-time">--:-- --</span>
+                    </div>
+                    <div class="clock-glow"></div>
+                </div>
+
+                <!-- Dynamic Personalized Greeting (above badge) -->
+                <div class="hero-greeting-wrapper" id="hero-greeting-wrapper">
+                    <div class="hero-greeting" id="hero-greeting">
+                        <span class="hero-greeting-text"></span>
+                    </div>
+                </div>
+                
+                <div class="hero-badge">
+                    <span class="badge-dot"></span>
+                    <span>2026 Edition</span>
+                </div>
+                
+                <h1 class="hero-title">
+                    <span class="title-pov">POV:</span>
+                    <span class="title-main" id="rotating-text">You are the only hope of your family</span>
+                </h1>
+                
+                <p class="hero-subtitle">Discipline today builds freedom tomorrow.</p>
+                
+                <div class="hero-cta">
+                    <button class="btn-primary" id="start-tracking-btn">
+                        <span>Start Tracking 2026</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    <button class="btn-secondary" id="view-progress-btn">
+                        View My Progress
+                    </button>
+                </div>
+                
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">365</span>
+                        <span class="stat-label">Days to Transform</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number">12</span>
+                        <span class="stat-label">Months of Growth</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number">1</span>
+                        <span class="stat-label">Decision Away</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="scroll-indicator">
+                <span>Scroll to explore</span>
+                <div class="scroll-arrow">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M19 12l-7 7-7-7"/>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dashboard Preview Section -->
+        <section class="dashboard-preview" id="dashboard-preview">
+            <div class="section-container">
+                <div class="section-header-landing">
+                    <span class="section-tag">Your Journey</span>
+                    <h2 class="section-title-landing">Monthly Habit Tracker 2026</h2>
+                    <p class="section-subtitle-landing">Twelve months. Twelve opportunities to become unstoppable.</p>
+                </div>
+                
+                <div class="preview-window">
+                    <div class="window-header">
+                        <div class="window-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <span class="window-title">Habit Tracker 2026</span>
+                    </div>
+                    <div class="preview-months" id="preview-months">
+                        <!-- Month cards generated by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== DAILY SPACE ENTRY POINT ==================== -->
+        <!-- Opens a full-page Google Keep-style notes app -->
+        <section class="daily-space-entry" id="daily-space-entry">
+            <div class="section-container">
+                <button type="button" class="daily-space-card" id="open-daily-space-btn">
+                    <div class="daily-space-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                    </div>
+                    <div class="daily-space-content">
+                        <h3>Daily Space</h3>
+                        <p>Notes, checklists, and ideas</p>
+                    </div>
+                    <div class="daily-space-arrow">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </div>
+                    <div class="daily-space-glow"></div>
+                </button>
+            </div>
+        </section>
+
+        <!-- Purpose Section -->
+        <section class="purpose-section">
+            <div class="purpose-content">
+                <div class="purpose-quote">
+                    <span class="quote-mark">"</span>
+                    <p>She sacrificed her dreams so you could have yours.</p>
+                    <span class="quote-mark quote-mark-end">"</span>
+                </div>
+                <p class="purpose-subtext">Make it count. Every single day.</p>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features-section">
+            <div class="section-container">
+                <div class="section-header-landing">
+                    <span class="section-tag">Why This Works</span>
+                    <h2 class="section-title-landing">Built for Real Discipline</h2>
+                </div>
+                
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <div class="feature-line"></div>
+                        <h3>Track daily habits with clarity</h3>
+                        <p>Simple checkboxes. No complexity. Just you and your commitments.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-line"></div>
+                        <h3>Visual monthly consistency</h3>
+                        <p>See your progress at a glance. Charts that motivate, not overwhelm.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-line"></div>
+                        <h3>Data saved automatically</h3>
+                        <p>Your progress never disappears. Pick up exactly where you left off.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-line"></div>
+                        <h3>Built for long-term discipline</h3>
+                        <p>Not a 30-day challenge. A lifestyle transformation system.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Final CTA Section -->
+        <section class="final-cta">
+            <div class="cta-content">
+                <h2>Your future self is watching.</h2>
+                <p>Make them proud.</p>
+                <button class="btn-primary btn-large" id="final-start-btn">
+                    <span>Begin Your Transformation</span>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </button>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="landing-footer">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="footer-logo">◆</span>
+                    <span class="footer-name">Habit Tracker</span>
+                    <span class="footer-year">2026</span>
+                </div>
+                <p class="footer-tagline">Built for consistency. Built for life.</p>
+                <div class="footer-line"></div>
+                <p class="footer-copy">Stay focused. Stay disciplined. 💪</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ==================== DAILY SPACE VIEW (Google Keep-Style Notes App) ==================== -->
+    <div class="daily-space-container hidden" id="daily-space-view">
+        <!-- Top Navigation Bar -->
+        <div class="daily-space-nav">
+            <button class="ds-back-btn" id="ds-back-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                <span>Home</span>
+            </button>
+            
+            <!-- Search Bar -->
+            <div class="ds-search-bar">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                </svg>
+                <input type="text" id="ds-search-input" placeholder="Search notes..." autocomplete="off">
+            </div>
+            
+            <!-- View Toggle -->
+            <div class="ds-view-toggle">
+                <button class="ds-view-btn active" id="ds-grid-view" title="Grid view">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                </button>
+                <button class="ds-view-btn" id="ds-list-view" title="List view">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="8" y1="6" x2="21" y2="6"/>
+                        <line x1="8" y1="12" x2="21" y2="12"/>
+                        <line x1="8" y1="18" x2="21" y2="18"/>
+                        <line x1="3" y1="6" x2="3.01" y2="6"/>
+                        <line x1="3" y1="12" x2="3.01" y2="12"/>
+                        <line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Labels Filter Bar -->
+        <div class="ds-labels-bar">
+            <button class="ds-label-pill active" data-label="all">All</button>
+            <button class="ds-label-pill" data-label="personal">🏠 Personal</button>
+            <button class="ds-label-pill" data-label="work">💼 Work</button>
+            <button class="ds-label-pill" data-label="college">🎓 College</button>
+            <button class="ds-label-pill" data-label="ideas">💡 Ideas</button>
+            <button class="ds-label-pill" data-label="shopping">🛒 Shopping</button>
+        </div>
+        
+        <!-- Notes Content Area -->
+        <div class="ds-content">
+            <!-- Pinned Notes Section -->
+            <div class="ds-section ds-pinned-section hidden" id="ds-pinned-section">
+                <h4 class="ds-section-title">Pinned</h4>
+                <div class="ds-notes-grid" id="ds-pinned-grid">
+                    <!-- Pinned note cards rendered by JS -->
+                </div>
+            </div>
+            
+            <!-- Other Notes Section -->
+            <div class="ds-section" id="ds-others-section">
+                <h4 class="ds-section-title" id="ds-others-title">Others</h4>
+                <div class="ds-notes-grid" id="ds-notes-grid">
+                    <!-- Note cards rendered by JS -->
+                </div>
+            </div>
+            
+            <!-- Empty State -->
+            <div class="ds-empty-state" id="ds-empty-state">
+                <div class="ds-empty-icon">📝</div>
+                <h3>No notes yet</h3>
+                <p>Tap + to create your first note</p>
+            </div>
+            
+            <!-- No Results State -->
+            <div class="ds-no-results hidden" id="ds-no-results">
+                <div class="ds-empty-icon">🔍</div>
+                <h3>No notes found</h3>
+                <p>Try a different search term</p>
+            </div>
+        </div>
+        
+        <!-- Floating Action Button -->
+        <button class="ds-fab" id="ds-add-note-btn" title="Add Note">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- ==================== NOTE EDITOR MODAL (Add/Edit Note) ==================== -->
+    <div class="ds-editor-overlay hidden" id="ds-editor-overlay">
+        <div class="ds-editor-modal">
+            <div class="ds-editor-header">
+                <input type="text" id="ds-note-title" class="ds-title-input" placeholder="Title" maxlength="100">
+                <button class="ds-editor-close" id="ds-editor-close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Note Type Toggle -->
+            <div class="ds-type-toggle">
+                <button class="ds-type-btn active" data-type="text" id="ds-type-text">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                    Text
+                </button>
+                <button class="ds-type-btn" data-type="checklist" id="ds-type-checklist">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 11l3 3L22 4"/>
+                        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                    </svg>
+                    Checklist
+                </button>
+            </div>
+            
+            <!-- Text Note Content -->
+            <div class="ds-editor-body" id="ds-text-editor">
+                <textarea id="ds-note-content" class="ds-content-input" placeholder="Write your note..." maxlength="5000"></textarea>
+            </div>
+            
+            <!-- Checklist Content -->
+            <div class="ds-editor-body hidden" id="ds-checklist-editor">
+                <div class="ds-checklist-items" id="ds-checklist-items">
+                    <!-- Checklist items rendered by JS -->
+                </div>
+                <div class="ds-add-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    <input type="text" id="ds-new-item-input" placeholder="Add item..." maxlength="200">
+                </div>
+            </div>
+            
+            <!-- Label Selector -->
+            <div class="ds-editor-labels">
+                <span class="ds-labels-title">Label:</span>
+                <div class="ds-label-options">
+                    <button class="ds-label-opt active" data-label="personal">🏠 Personal</button>
+                    <button class="ds-label-opt" data-label="work">💼 Work</button>
+                    <button class="ds-label-opt" data-label="college">🎓 College</button>
+                    <button class="ds-label-opt" data-label="ideas">💡 Ideas</button>
+                    <button class="ds-label-opt" data-label="shopping">🛒 Shopping</button>
+                </div>
+            </div>
+            
+            <!-- Editor Footer -->
+            <div class="ds-editor-footer">
+                <div class="ds-editor-actions">
+                    <button class="ds-action-btn" id="ds-pin-btn" title="Pin note">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 4.5L8.5 11L4 10L3 11L7 15L6 20L7 21L11 17L15 21L16 20L15 15.5L21.5 9L21 4L15 4.5Z"/>
+                        </svg>
+                    </button>
+                    <button class="ds-action-btn ds-delete-btn" id="ds-delete-btn" title="Delete note">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14"/>
+                        </svg>
+                    </button>
+                </div>
+                <button class="ds-save-btn" id="ds-save-btn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="ds-delete-overlay hidden" id="ds-delete-overlay">
+        <div class="ds-delete-modal">
+            <div class="ds-delete-icon">🗑️</div>
+            <h3>Delete Note?</h3>
+            <p>This action cannot be undone.</p>
+            <div class="ds-delete-actions">
+                <button class="ds-cancel-btn" id="ds-delete-cancel">Cancel</button>
+                <button class="ds-confirm-delete-btn" id="ds-delete-confirm">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 2026 CALENDAR VIEW ==================== -->
+    <div class="calendar-view-container hidden" id="calendar-view">
+        <!-- Calendar Navigation Bar -->
+        <div class="calendar-nav">
+            <button class="calendar-back-btn" id="calendar-back-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                <span>Back to Home</span>
+            </button>
+            <h1 class="calendar-title">2026 Calendar</h1>
+            <div class="calendar-nav-spacer"></div>
+        </div>
+        
+        <!-- Calendar Grid Container -->
+        <div class="calendar-content">
+            <div class="calendar-grid" id="calendar-grid">
+                <!-- 12 months rendered by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MONTH VIEW (Habit Tracker) ==================== -->
+    <div class="month-view-container hidden" id="month-view">
+        <div class="month-view-wrapper">
+            <!-- Top Navigation Bar -->
+            <div class="month-view-nav">
+                <button class="back-btn" id="back-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                    Back to Home
+                </button>
+                
+                <!-- Reminder Settings Button -->
+                <button class="reminder-settings-btn" id="reminder-settings-btn" title="Smart Reminders">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    <span class="reminder-btn-text">Reminders</span>
+                    <span class="reminder-indicator" id="reminder-indicator"></span>
+                </button>
+            </div>
+
+            <!-- Month Header with Nature Panorama -->
+            <div class="month-view-header">
+                <div class="month-view-panorama" id="month-panorama"></div>
+                <div class="month-view-content">
+                    <div class="month-header">
+                        <h2 class="month-title" id="month-title">January</h2>
+                        <span class="month-year">2026</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Habits Section -->
+            <div class="habits-section">
+                <div class="habits-header">
+                    <h3 class="habits-title">My Habits</h3>
+                    <div class="habits-header-actions">
+                        <button class="focus-mode-btn" id="focus-mode-btn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            🎯 Focus on Today
+                        </button>
+                        <button class="add-habit-btn" id="add-habit-btn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                            Add Habit
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Category Filter -->
+                <div class="category-filter-container" id="category-filter-container">
+                    <span class="filter-label">Filter:</span>
+                    <div class="category-filter-pills">
+                        <button class="filter-pill active" data-category="all">All</button>
+                        <button class="filter-pill" data-category="health">🧘 Health</button>
+                        <button class="filter-pill" data-category="study">📚 Study</button>
+                        <button class="filter-pill" data-category="discipline">⏰ Discipline</button>
+                        <button class="filter-pill" data-category="mind">🧠 Mind</button>
+                        <button class="filter-pill" data-category="other">➕ Other</button>
+                    </div>
+                </div>
+                
+                <!-- Streak Display -->
+                <div class="streak-container" id="streak-container">
+                    <!-- Streak cards rendered by JS -->
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <h4>No habits yet</h4>
+                    <p>Click "Add Habit" to start tracking your daily routines</p>
+                </div>
+
+                <!-- Habit Table Container -->
+                <div class="table-container" id="table-container">
+                    <table class="habit-table" id="habit-table">
+                        <thead id="table-header">
+                            <!-- Header row with dates will be generated -->
+                        </thead>
+                        <tbody id="table-body">
+                            <!-- Habit rows will be generated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Monthly Summary Card -->
+            <div class="summary-container hidden" id="summary-container">
+                <!-- Summary card rendered by JS -->
+            </div>
+            
+            <!-- Habit Heatmap (GitHub Style) -->
+            <div class="heatmap-section" id="heatmap-section">
+                <div class="heatmap-header">
+                    <h3 class="heatmap-title">📅 Monthly Activity</h3>
+                    <div class="heatmap-legend">
+                        <span class="legend-label">Less</span>
+                        <div class="legend-squares">
+                            <span class="legend-square level-0"></span>
+                            <span class="legend-square level-1"></span>
+                            <span class="legend-square level-2"></span>
+                            <span class="legend-square level-3"></span>
+                            <span class="legend-square level-4"></span>
+                        </div>
+                        <span class="legend-label">More</span>
+                    </div>
+                </div>
+                <div class="heatmap-grid" id="heatmap-grid">
+                    <!-- Heatmap squares rendered by JS -->
+                </div>
+            </div>
+
+            <!-- Progress Section -->
+            <div class="progress-section" id="progress-section">
+                <h3 class="progress-title">Monthly Progress</h3>
+                
+                <div class="goal-banner">
+                    <span class="goal-icon">🎯</span>
+                    <span class="goal-text">Goal: 80% Consistency</span>
+                </div>
+
+                <div class="charts-container">
+                    <!-- Pie Chart -->
+                    <div class="chart-card">
+                        <h4 class="chart-title">Completion Rate</h4>
+                        <div class="pie-chart-container">
+                            <canvas id="pie-chart"></canvas>
+                            <div class="pie-center-text" id="pie-percentage">0%</div>
+                        </div>
+                    </div>
+
+                    <!-- Line Chart -->
+                    <div class="chart-card chart-card-wide">
+                        <h4 class="chart-title">Daily Consistency Trend</h4>
+                        <div class="line-chart-container">
+                            <canvas id="line-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Habit Modal -->
+    <div class="modal-overlay hidden" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Add New Habit</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label for="habit-input">Habit Name</label>
+                <input type="text" id="habit-input" placeholder="e.g., Wake up at 5 AM" maxlength="50">
+                <p class="input-hint">Tip: Be specific about your habit</p>
+                
+                <label for="habit-category" class="category-label">Category</label>
+                <div class="category-selector" id="category-selector">
+                    <button type="button" class="category-btn" data-category="health">
+                        <span class="cat-icon">🧘</span>
+                        <span class="cat-name">Health</span>
+                    </button>
+                    <button type="button" class="category-btn" data-category="study">
+                        <span class="cat-icon">📚</span>
+                        <span class="cat-name">Study</span>
+                    </button>
+                    <button type="button" class="category-btn" data-category="discipline">
+                        <span class="cat-icon">⏰</span>
+                        <span class="cat-name">Discipline</span>
+                    </button>
+                    <button type="button" class="category-btn" data-category="mind">
+                        <span class="cat-icon">🧠</span>
+                        <span class="cat-name">Mind</span>
+                    </button>
+                    <button type="button" class="category-btn active" data-category="other">
+                        <span class="cat-icon">➕</span>
+                        <span class="cat-name">Other</span>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="modal-cancel">Cancel</button>
+                <button class="btn btn-primary-app" id="modal-save">Add Habit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Scripts -->
+    <!-- ==========================================
+         CREATOR BRANDING FOOTER
+         Personal branding section - visible on all pages
+         ========================================== -->
+    <footer class="creator-footer" id="creator-footer">
+        <div class="creator-content">
+            <p class="creator-tagline">Built with 💜 by</p>
+            <h4 class="creator-name">
+                <span class="name-text">M. Pavan Vedesh</span>
+                <span class="name-underline"></span>
+            </h4>
+            <a href="tel:+919391aborrar" class="creator-phone" title="Call M. Pavan Vedesh">
+                <svg class="phone-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                <span class="phone-number">+91 9391781748</span>
+            </a>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <!-- Supabase Integration (user identity & analytics) -->
+    <script src="supabase.js"></script>
+    <!-- PWA Integration (service worker, install prompt) -->
+    <script src="pwa.js"></script>
+</body>
+</html>

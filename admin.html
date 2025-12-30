@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Habit Tracker 2026</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ========================================
+           ADMIN DASHBOARD STYLES
+           Minimal, private, read-only analytics
+           ======================================== */
+        
+        :root {
+            --dark-bg: #0a0a0b;
+            --dark-surface: #18181b;
+            --dark-border: #27272a;
+            --dark-text: #fafafa;
+            --dark-text-secondary: #a1a1aa;
+            --dark-text-muted: #71717a;
+            --dark-accent: #a78bfa;
+            --dark-accent-glow: rgba(167, 139, 250, 0.3);
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--dark-text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        /* Auth Gate */
+        .auth-gate {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        
+        .auth-box {
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            border-radius: 16px;
+            padding: 48px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .auth-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .auth-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .auth-subtitle {
+            color: var(--dark-text-secondary);
+            margin-bottom: 32px;
+            font-size: 0.95rem;
+        }
+        
+        .auth-input {
+            width: 100%;
+            padding: 14px 18px;
+            background: var(--dark-bg);
+            border: 1px solid var(--dark-border);
+            border-radius: 8px;
+            color: var(--dark-text);
+            font-size: 1rem;
+            font-family: inherit;
+            margin-bottom: 16px;
+        }
+        
+        .auth-input:focus {
+            outline: none;
+            border-color: var(--dark-accent);
+        }
+        
+        .auth-btn {
+            width: 100%;
+            padding: 14px 24px;
+            background: var(--dark-accent);
+            color: var(--dark-bg);
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px var(--dark-accent-glow);
+        }
+        
+        .auth-error {
+            color: var(--error);
+            font-size: 0.875rem;
+            margin-top: 12px;
+            display: none;
+        }
+        
+        .auth-error.visible {
+            display: block;
+        }
+        
+        /* Dashboard */
+        .dashboard {
+            display: none;
+            padding: 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .dashboard.visible {
+            display: block;
+        }
+        
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 48px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--dark-border);
+        }
+        
+        .dashboard-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+        
+        .dashboard-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success);
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .logout-btn {
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid var(--dark-border);
+            border-radius: 8px;
+            color: var(--dark-text-secondary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .logout-btn:hover {
+            border-color: var(--error);
+            color: var(--error);
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+        
+        .stat-card {
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            border-radius: 12px;
+            padding: 28px;
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--dark-text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--dark-text);
+        }
+        
+        .stat-value.accent {
+            color: var(--dark-accent);
+        }
+        
+        .stat-value.success {
+            color: var(--success);
+        }
+        
+        .stat-change {
+            font-size: 0.875rem;
+            color: var(--dark-text-muted);
+            margin-top: 8px;
+        }
+        
+        /* Sections */
+        .section {
+            margin-bottom: 48px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .section-subtitle {
+            font-size: 0.875rem;
+            color: var(--dark-text-muted);
+        }
+        
+        /* Top Habits List */
+        .habits-list {
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .habit-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--dark-border);
+        }
+        
+        .habit-item:last-child {
+            border-bottom: none;
+        }
+        
+        .habit-rank {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: var(--dark-bg);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--dark-text-muted);
+            margin-right: 16px;
+        }
+        
+        .habit-rank.top {
+            background: var(--dark-accent-glow);
+            color: var(--dark-accent);
+        }
+        
+        .habit-name {
+            flex: 1;
+            font-weight: 500;
+        }
+        
+        .habit-count {
+            color: var(--dark-text-muted);
+            font-size: 0.875rem;
+        }
+        
+        /* Privacy Notice */
+        .privacy-notice {
+            background: rgba(167, 139, 250, 0.05);
+            border: 1px solid var(--dark-border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 48px;
+        }
+        
+        .privacy-notice h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        .privacy-notice ul {
+            list-style: none;
+            color: var(--dark-text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .privacy-notice li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .privacy-notice li:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* Loading State */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 64px;
+            color: var(--dark-text-muted);
+        }
+        
+        .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--dark-border);
+            border-top-color: var(--dark-accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Error State */
+        .error-state {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--error);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            color: var(--error);
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 48px;
+            color: var(--dark-text-muted);
+        }
+        
+        /* ==========================================
+           USER LIST TABLE STYLES (Admin Only)
+           Shows registered users with activity status
+           ========================================== */
+        
+        .users-table-container {
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        
+        .users-table thead {
+            background: var(--dark-bg);
+        }
+        
+        .users-table th {
+            padding: 14px 20px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--dark-text-muted);
+            border-bottom: 1px solid var(--dark-border);
+        }
+        
+        .users-table td {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--dark-border);
+            color: var(--dark-text-secondary);
+        }
+        
+        .users-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .users-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        /* User name column */
+        .user-name-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--dark-accent) 0%, #8b5cf6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: white;
+            flex-shrink: 0;
+        }
+        
+        .user-name {
+            font-weight: 500;
+            color: var(--dark-text);
+        }
+        
+        /* Activity status badge */
+        .activity-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .activity-badge.active {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--success);
+        }
+        
+        .activity-badge.inactive {
+            background: rgba(161, 161, 170, 0.1);
+            color: var(--dark-text-muted);
+        }
+        
+        .activity-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+        
+        .activity-badge.active .activity-dot {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Timestamp styling */
+        .timestamp-cell {
+            white-space: nowrap;
+        }
+        
+        .timestamp-date {
+            display: block;
+            color: var(--dark-text-secondary);
+        }
+        
+        .timestamp-time {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--dark-text-muted);
+            margin-top: 2px;
+        }
+        
+        /* Table info bar */
+        .table-info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: var(--dark-bg);
+            border-top: 1px solid var(--dark-border);
+            font-size: 0.8rem;
+            color: var(--dark-text-muted);
+        }
+        
+        .refresh-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid var(--dark-border);
+            border-radius: 6px;
+            color: var(--dark-text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            border-color: var(--dark-accent);
+            color: var(--dark-accent);
+        }
+        
+        .refresh-btn.loading {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+        
+        .refresh-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+        
+        .refresh-btn.loading svg {
+            animation: spin 1s linear infinite;
+        }
+        
+        /* Responsive table */
+        @media (max-width: 768px) {
+            .users-table-container {
+                overflow-x: auto;
+            }
+            
+            .users-table {
+                min-width: 600px;
+            }
+            
+            .users-table th,
+            .users-table td {
+                padding: 12px 14px;
+            }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard {
+                padding: 20px;
+            }
+            
+            .dashboard-header {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+            
+            .stat-value {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Authentication Gate -->
+    <div class="auth-gate" id="auth-gate">
+        <div class="auth-box">
+            <div class="auth-icon">🔐</div>
+            <h1 class="auth-title">Admin Access</h1>
+            <p class="auth-subtitle">This dashboard is restricted to administrators only.</p>
+            
+            <input 
+                type="password" 
+                class="auth-input" 
+                id="admin-key-input" 
+                placeholder="Enter admin key"
+                autocomplete="off"
+            >
+            <button class="auth-btn" id="auth-btn">Verify Access</button>
+            <p class="auth-error" id="auth-error">Invalid admin key. Access denied.</p>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div class="dashboard" id="dashboard">
+        <header class="dashboard-header">
+            <div>
+                <h1 class="dashboard-title">📊 Admin Dashboard</h1>
+                <span class="dashboard-badge">
+                    <span>●</span>
+                    Live Analytics
+                </span>
+            </div>
+            <button class="logout-btn" id="logout-btn">Logout</button>
+        </header>
+
+        <!-- Privacy Notice -->
+        <div class="privacy-notice">
+            <h3>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                Privacy-First Analytics
+            </h3>
+            <ul>
+                <li>✓ All data shown is aggregated and anonymous</li>
+                <li>✓ Individual habit completions are NEVER exposed</li>
+                <li>✓ User names are NOT displayed in any report</li>
+                <li>✓ Habit names are only shown when aggregated across 3+ users</li>
+            </ul>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Users</div>
+                <div class="stat-value" id="total-users">—</div>
+                <div class="stat-change">All time registrations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Daily Active Users</div>
+                <div class="stat-value accent" id="daily-users">—</div>
+                <div class="stat-change">Active today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Weekly Active Users</div>
+                <div class="stat-value" id="weekly-users">—</div>
+                <div class="stat-change">Last 7 days</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Monthly Active Users</div>
+                <div class="stat-value" id="monthly-users">—</div>
+                <div class="stat-change">Last 30 days</div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             REGISTERED USERS LIST (Admin Only)
+             Shows user details from Supabase
+             Privacy: Only name + timestamps shown
+             ========================================== -->
+        <div class="section">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">👥 Registered Users</h2>
+                    <p class="section-subtitle">User details from Supabase (name and activity timestamps only)</p>
+                </div>
+            </div>
+            
+            <div class="users-table-container" id="users-table-container">
+                <!-- Loading state -->
+                <div class="loading" id="users-loading">
+                    <div class="loading-spinner"></div>
+                    <span>Loading users from Supabase...</span>
+                </div>
+                
+                <!-- Users table (populated by JS) -->
+                <table class="users-table" id="users-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>First Visit</th>
+                            <th>Last Active</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        <!-- User rows inserted by JavaScript -->
+                    </tbody>
+                </table>
+                
+                <!-- Error state -->
+                <div class="error-state" id="users-error" style="display: none;">
+                    <p>⚠️ Failed to load users from Supabase</p>
+                    <p style="font-size: 0.8rem; margin-top: 8px; opacity: 0.8;">Check console for details</p>
+                </div>
+                
+                <!-- Empty state -->
+                <div class="empty-state" id="users-empty" style="display: none;">
+                    <p>No registered users yet.</p>
+                </div>
+                
+                <!-- Table info bar -->
+                <div class="table-info-bar" id="users-info-bar" style="display: none;">
+                    <span id="users-count-info">0 users</span>
+                    <button class="refresh-btn" id="refresh-users-btn" title="Refresh user list">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 4v6h-6M1 20v-6h6"/>
+                            <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Local Stats Section (from this browser) -->
+        <div class="section">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">📱 Your Local Data</h2>
+                    <p class="section-subtitle">Statistics from this browser's localStorage (for demo purposes)</p>
+                </div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Your Total Habits</div>
+                    <div class="stat-value success" id="local-habits">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Your Avg Consistency</div>
+                    <div class="stat-value" id="local-consistency">—%</div>
+                </div>
+            </div>
+            
+            <div class="habits-list" id="top-habits-list">
+                <div class="loading" id="habits-loading">
+                    <div class="loading-spinner"></div>
+                    <span>Loading habits data...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ========================================
+         * ADMIN DASHBOARD LOGIC
+         * ========================================
+         * 
+         * This is a simple, read-only admin dashboard.
+         * 
+         * SECURITY NOTE:
+         * This uses a simple client-side key check for demo purposes.
+         * In production, you should:
+         * 1. Use Supabase Auth with role-based access
+         * 2. Or protect this page with Netlify Identity
+         * 3. Or use environment variables with server-side verification
+         * 
+         * The admin key is NOT meant to be high-security.
+         * It's just a simple gate to prevent casual access.
+         */
+
+        // ==================== CONFIGURATION ====================
+
+        /**
+         * Admin Key Configuration
+         * 
+         * For production, set this via environment variable:
+         * - Netlify: ADMIN_KEY environment variable
+         * - Or use Supabase Auth with admin role
+         * 
+         * For demo, we use a simple string comparison.
+         * This key should be changed before deployment.
+         */
+        const ADMIN_KEY = 'Vedesh@07';  // Your private admin password
+
+        // Supabase config (must match main supabase.js)
+        const SUPABASE_CONFIG = {
+            url: 'https://etvwvskgmzdzyspawyvw.supabase.co',
+            anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0dnd2c2tnbXpkenlzcGF3eXZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MTUwNDcsImV4cCI6MjA4MjM5MTA0N30.K4g_gY_T2RVZ58MCEYc87csRUe3GKloslNYUrnK7hy0'
+        };
+
+        let supabaseClient = null;
+
+        // ==================== DOM ELEMENTS ====================
+
+        const authGate = document.getElementById('auth-gate');
+        const dashboard = document.getElementById('dashboard');
+        const adminKeyInput = document.getElementById('admin-key-input');
+        const authBtn = document.getElementById('auth-btn');
+        const authError = document.getElementById('auth-error');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        // ==================== AUTHENTICATION ====================
+
+        /**
+         * Check if user is already authenticated (session-based)
+         */
+        function checkAuth() {
+            const isAuth = sessionStorage.getItem('admin_authenticated');
+            if (isAuth === 'true') {
+                showDashboard();
+            }
+        }
+
+        /**
+         * Verify admin key
+         */
+        function verifyKey() {
+            const inputKey = adminKeyInput.value.trim();
+            
+            if (inputKey === ADMIN_KEY) {
+                sessionStorage.setItem('admin_authenticated', 'true');
+                authError.classList.remove('visible');
+                showDashboard();
+            } else {
+                authError.classList.add('visible');
+                adminKeyInput.value = '';
+                adminKeyInput.focus();
+            }
+        }
+
+        /**
+         * Logout
+         */
+        function logout() {
+            sessionStorage.removeItem('admin_authenticated');
+            dashboard.classList.remove('visible');
+            authGate.style.display = 'flex';
+            adminKeyInput.value = '';
+        }
+
+        /**
+         * Show dashboard and load data
+         */
+        function showDashboard() {
+            authGate.style.display = 'none';
+            dashboard.classList.add('visible');
+            loadAnalytics();
+        }
+
+        // ==================== ANALYTICS ====================
+
+        /**
+         * Initialize Supabase client
+         */
+        async function initSupabase() {
+            if (SUPABASE_CONFIG.url === 'YOUR_SUPABASE_PROJECT_URL') {
+                console.warn('[Admin] Supabase not configured');
+                return null;
+            }
+
+            try {
+                // Load Supabase library
+                await new Promise((resolve, reject) => {
+                    if (typeof window.supabase !== 'undefined') {
+                        resolve();
+                        return;
+                    }
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+
+                supabaseClient = window.supabase.createClient(
+                    SUPABASE_CONFIG.url,
+                    SUPABASE_CONFIG.anonKey
+                );
+
+                return supabaseClient;
+            } catch (error) {
+                console.error('[Admin] Failed to init Supabase:', error);
+                return null;
+            }
+        }
+
+        /**
+         * Load analytics from Supabase
+         */
+        async function loadAnalytics() {
+            // Load Supabase analytics
+            const client = await initSupabase();
+            
+            if (client) {
+                try {
+                    const { data, error } = await client
+                        .from('analytics_summary')
+                        .select('*')
+                        .single();
+
+                    if (data && !error) {
+                        document.getElementById('total-users').textContent = data.total_users || 0;
+                        document.getElementById('daily-users').textContent = data.daily_active_users || 0;
+                        document.getElementById('weekly-users').textContent = data.weekly_active_users || 0;
+                        document.getElementById('monthly-users').textContent = data.monthly_active_users || 0;
+                    } else {
+                        setPlaceholderStats();
+                    }
+                } catch (error) {
+                    console.error('[Admin] Error loading analytics:', error);
+                    setPlaceholderStats();
+                }
+            } else {
+                setPlaceholderStats();
+            }
+
+            // Always load local stats (from this browser)
+            loadLocalStats();
+            
+            // Load registered users list (admin-only feature)
+            loadRegisteredUsers();
+        }
+
+        // ==================== REGISTERED USERS (Admin Only) ====================
+        
+        /**
+         * Load registered users from Supabase
+         * Fetches user list with name, first_visit, and last_active
+         * Privacy: Only displays identity data, NEVER habit data
+         */
+        async function loadRegisteredUsers() {
+            const loadingEl = document.getElementById('users-loading');
+            const tableEl = document.getElementById('users-table');
+            const errorEl = document.getElementById('users-error');
+            const emptyEl = document.getElementById('users-empty');
+            const infoBarEl = document.getElementById('users-info-bar');
+            
+            // Show loading state
+            loadingEl.style.display = 'flex';
+            tableEl.style.display = 'none';
+            errorEl.style.display = 'none';
+            emptyEl.style.display = 'none';
+            infoBarEl.style.display = 'none';
+            
+            try {
+                const client = await initSupabase();
+                
+                if (!client) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                // Fetch all users ordered by last_active (most recent first)
+                // We query the users table directly since RLS allows SELECT
+                const { data: users, error } = await client
+                    .from('users')
+                    .select('id, name, first_visit, last_active')
+                    .order('last_active', { ascending: false });
+                
+                if (error) {
+                    throw error;
+                }
+                
+                // Hide loading
+                loadingEl.style.display = 'none';
+                
+                if (!users || users.length === 0) {
+                    // Show empty state
+                    emptyEl.style.display = 'block';
+                    return;
+                }
+                
+                // Render users table
+                renderUsersTable(users);
+                
+                // Show table and info bar
+                tableEl.style.display = 'table';
+                infoBarEl.style.display = 'flex';
+                
+                // Update count info
+                const activeToday = users.filter(u => isActiveToday(u.last_active)).length;
+                document.getElementById('users-count-info').textContent = 
+                    `${users.length} user${users.length !== 1 ? 's' : ''} · ${activeToday} active today`;
+                
+                console.log(`[Admin] Loaded ${users.length} users from Supabase`);
+                
+            } catch (error) {
+                console.error('[Admin] Error loading users:', error);
+                loadingEl.style.display = 'none';
+                errorEl.style.display = 'block';
+            }
+        }
+        
+        /**
+         * Render the users table with fetched data
+         * @param {Array} users - Array of user objects from Supabase
+         */
+        function renderUsersTable(users) {
+            const tbody = document.getElementById('users-table-body');
+            
+            // Generate table rows
+            tbody.innerHTML = users.map(user => {
+                const isActive = isActiveToday(user.last_active);
+                const initials = getInitials(user.name);
+                const firstVisit = formatTimestamp(user.first_visit);
+                const lastActive = formatTimestamp(user.last_active);
+                const lastActiveRelative = getRelativeTime(user.last_active);
+                
+                return `
+                    <tr>
+                        <td>
+                            <div class="user-name-cell">
+                                <div class="user-avatar">${escapeHtml(initials)}</div>
+                                <span class="user-name">${escapeHtml(user.name)}</span>
+                            </div>
+                        </td>
+                        <td class="timestamp-cell">
+                            <span class="timestamp-date">${firstVisit.date}</span>
+                            <span class="timestamp-time">${firstVisit.time}</span>
+                        </td>
+                        <td class="timestamp-cell">
+                            <span class="timestamp-date">${lastActiveRelative}</span>
+                            <span class="timestamp-time">${lastActive.time}</span>
+                        </td>
+                        <td>
+                            <span class="activity-badge ${isActive ? 'active' : 'inactive'}">
+                                <span class="activity-dot"></span>
+                                ${isActive ? 'Active Today' : 'Inactive'}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        /**
+         * Check if a timestamp is from today
+         * @param {string} timestamp - ISO timestamp string
+         * @returns {boolean}
+         */
+        function isActiveToday(timestamp) {
+            if (!timestamp) return false;
+            const date = new Date(timestamp);
+            const today = new Date();
+            return date.toDateString() === today.toDateString();
+        }
+        
+        /**
+         * Get user initials from name (max 2 characters)
+         * @param {string} name - User's name
+         * @returns {string} - Initials (e.g., "JD" for "John Doe")
+         */
+        function getInitials(name) {
+            if (!name) return '?';
+            const parts = name.trim().split(/\s+/);
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            }
+            return name.substring(0, 2).toUpperCase();
+        }
+        
+        /**
+         * Format timestamp into date and time parts
+         * @param {string} timestamp - ISO timestamp string
+         * @returns {object} - { date: string, time: string }
+         */
+        function formatTimestamp(timestamp) {
+            if (!timestamp) return { date: '—', time: '' };
+            
+            const date = new Date(timestamp);
+            
+            return {
+                date: date.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                }),
+                time: date.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true 
+                })
+            };
+        }
+        
+        /**
+         * Get relative time string (Today, Yesterday, or date)
+         * @param {string} timestamp - ISO timestamp string
+         * @returns {string}
+         */
+        function getRelativeTime(timestamp) {
+            if (!timestamp) return '—';
+            
+            const date = new Date(timestamp);
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            if (date.toDateString() === today.toDateString()) {
+                return 'Today';
+            } else if (date.toDateString() === yesterday.toDateString()) {
+                return 'Yesterday';
+            } else {
+                return date.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                });
+            }
+        }
+        
+        /**
+         * Refresh users list (called by refresh button)
+         */
+        async function refreshUsersList() {
+            const refreshBtn = document.getElementById('refresh-users-btn');
+            
+            // Add loading state to button
+            refreshBtn.classList.add('loading');
+            refreshBtn.disabled = true;
+            
+            // Reload users
+            await loadRegisteredUsers();
+            
+            // Remove loading state
+            refreshBtn.classList.remove('loading');
+            refreshBtn.disabled = false;
+        }
+
+        /**
+         * Set placeholder stats when Supabase is unavailable
+         */
+        function setPlaceholderStats() {
+            document.getElementById('total-users').textContent = '—';
+            document.getElementById('daily-users').textContent = '—';
+            document.getElementById('weekly-users').textContent = '—';
+            document.getElementById('monthly-users').textContent = '—';
+        }
+
+        /**
+         * Load local statistics from this browser's localStorage
+         * This demonstrates the anonymous stats calculation
+         */
+        function loadLocalStats() {
+            const habitsLoading = document.getElementById('habits-loading');
+            const habitsList = document.getElementById('top-habits-list');
+
+            try {
+                const habitData = localStorage.getItem('habitTracker2026');
+                
+                if (!habitData) {
+                    document.getElementById('local-habits').textContent = '0';
+                    document.getElementById('local-consistency').textContent = '0%';
+                    habitsList.innerHTML = '<div class="empty-state">No habit data found in this browser.</div>';
+                    return;
+                }
+
+                const data = JSON.parse(habitData);
+                const habitNames = [];
+                let totalCheckboxes = 0;
+                let completedCheckboxes = 0;
+
+                // Aggregate data
+                const daysPerMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+                
+                for (let monthKey in data) {
+                    if (monthKey.startsWith('month_')) {
+                        const monthData = data[monthKey];
+                        const monthIndex = parseInt(monthKey.split('_')[1]);
+                        
+                        if (monthData.habits) {
+                            monthData.habits.forEach(habit => {
+                                habitNames.push(habit.name.toLowerCase().trim());
+                            });
+                            
+                            totalCheckboxes += monthData.habits.length * daysPerMonth[monthIndex];
+                        }
+                        
+                        if (monthData.completions) {
+                            completedCheckboxes += Object.values(monthData.completions).filter(v => v === true).length;
+                        }
+                    }
+                }
+
+                // Update stats
+                document.getElementById('local-habits').textContent = habitNames.length;
+                
+                const consistency = totalCheckboxes > 0 
+                    ? Math.round((completedCheckboxes / totalCheckboxes) * 100) 
+                    : 0;
+                document.getElementById('local-consistency').textContent = consistency + '%';
+
+                // Get top habits
+                const habitCounts = {};
+                habitNames.forEach(name => {
+                    habitCounts[name] = (habitCounts[name] || 0) + 1;
+                });
+
+                const topHabits = Object.entries(habitCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5);
+
+                // Render top habits
+                if (topHabits.length > 0) {
+                    habitsList.innerHTML = topHabits.map(([name, count], index) => `
+                        <div class="habit-item">
+                            <span class="habit-rank ${index === 0 ? 'top' : ''}">${index + 1}</span>
+                            <span class="habit-name">${escapeHtml(name)}</span>
+                            <span class="habit-count">${count} month${count !== 1 ? 's' : ''}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    habitsList.innerHTML = '<div class="empty-state">No habits tracked yet.</div>';
+                }
+
+            } catch (error) {
+                console.error('[Admin] Error loading local stats:', error);
+                habitsList.innerHTML = '<div class="error-state">Error loading habit data.</div>';
+            }
+        }
+
+        /**
+         * Escape HTML to prevent XSS
+         */
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ==================== EVENT LISTENERS ====================
+
+        authBtn.addEventListener('click', verifyKey);
+        
+        adminKeyInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') verifyKey();
+        });
+
+        logoutBtn.addEventListener('click', logout);
+        
+        // Refresh users button
+        document.getElementById('refresh-users-btn').addEventListener('click', refreshUsersList);
+
+        // Check auth on load
+        checkAuth();
+    </script>
+</body>
+</html>
