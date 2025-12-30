@@ -407,10 +407,21 @@ body {
 @media (max-width: 768px) {
     .calendar-nav {
         padding: var(--spacing-sm) var(--spacing-md);
+        gap: var(--spacing-sm);
     }
     
     .calendar-title {
-        font-size: 1.25rem;
+        font-size: 1.1rem;
+        white-space: nowrap;
+    }
+    
+    .calendar-back-btn {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: 0.75rem;
+    }
+    
+    .calendar-back-btn span {
+        display: inline;
     }
     
     .calendar-nav-spacer {
@@ -816,10 +827,8 @@ body {
 }
 
 .scroll-indicator {
-    position: absolute;
-    bottom: var(--spacing-xl);
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;
+    margin-top: var(--spacing-2xl);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -830,8 +839,8 @@ body {
 }
 
 @keyframes bounce {
-    0%, 100% { transform: translateX(-50%) translateY(0); }
-    50% { transform: translateX(-50%) translateY(8px); }
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(8px); }
 }
 
 .scroll-arrow {
@@ -999,12 +1008,12 @@ body {
     line-height: 1;
     position: absolute;
     top: -20px;
-    left: -20px;
+    left: 10px;
 }
 
 .quote-mark-end {
     left: auto;
-    right: -20px;
+    right: 10px;
     top: auto;
     bottom: -60px;
 }
@@ -3177,9 +3186,7 @@ body.app-mode {
     }
     
     .quote-mark {
-        font-size: 3rem;
-        position: static;
-        display: block;
+        display: none;
     }
     
     .quote-mark-end {
