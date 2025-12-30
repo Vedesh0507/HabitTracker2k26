@@ -5941,6 +5941,7 @@ button.daily-space-card,
     margin: 0 0 var(--spacing-xs) 0;
     display: -webkit-box;
     -webkit-line-clamp: 1;
+    line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -5953,6 +5954,7 @@ button.daily-space-card,
     line-height: 1.5;
     display: -webkit-box;
     -webkit-line-clamp: 6;
+    line-clamp: 6;
     -webkit-box-orient: vertical;
     overflow: hidden;
     white-space: pre-wrap;
@@ -6065,7 +6067,7 @@ button.daily-space-card,
 /* -------------------- FAB Button -------------------- */
 .ds-fab {
     position: fixed;
-    bottom: var(--spacing-xl);
+    bottom: calc(var(--spacing-xl) + 70px); /* Above footer */
     right: var(--spacing-xl);
     width: 60px;
     height: 60px;
@@ -6079,7 +6081,7 @@ button.daily-space-card,
     justify-content: center;
     box-shadow: 0 4px 20px rgba(167, 139, 250, 0.4);
     transition: all var(--transition-normal);
-    z-index: 50;
+    z-index: 200;
 }
 
 .ds-fab:hover {
@@ -6089,7 +6091,7 @@ button.daily-space-card,
 
 @media (max-width: 480px) {
     .ds-fab {
-        bottom: var(--spacing-lg);
+        bottom: calc(var(--spacing-lg) + 70px); /* Above footer */
         right: var(--spacing-lg);
         width: 56px;
         height: 56px;
