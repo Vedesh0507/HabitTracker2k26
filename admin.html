@@ -1413,11 +1413,16 @@
                     throw new Error('Supabase client not available');
                 }
                 
+                console.log('[Admin] Attempting to delete user:', deleteUserId);
+                
                 // Delete user from Supabase
-                const { error } = await client
+                const { data, error, status } = await client
                     .from('users')
                     .delete()
-                    .eq('id', deleteUserId);
+                    .eq('id', deleteUserId)
+                    .select();
+                
+                console.log('[Admin] Delete response:', { data, error, status });
                 
                 if (error) {
                     throw error;
