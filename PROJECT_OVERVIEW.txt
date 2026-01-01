@@ -1,0 +1,78 @@
+Hello! 👋
+
+I'm M. Pavan Vedesh, and I'm excited to share my project with you:
+
+# Habit Tracker 2026
+
+## Project Motto
+**"Build better habits, one day at a time!"**
+
+## What is Habit Tracker 2026?
+Habit Tracker 2026 is a modern, user-friendly web app designed to help you build, track, and maintain positive habits throughout the year 2026. Whether you want to improve your health, boost productivity, or simply stay organized, this app is your daily companion for success.
+
+---
+
+## Key Features
+
+- **Beautiful 2026 Calendar**
+  - Visualize your habits and streaks on a full-year calendar
+  - January is specially highlighted to kickstart your year
+  - Today's date is always marked for easy tracking
+
+- **Live Clock**
+  - Stay aware of the time with a real-time clock on the dashboard
+
+- **Daily Space (Notes)**
+  - Write daily notes, reflections, or journal entries
+  - Easy navigation with a "Back to Home" button
+
+- **Streak System**
+  - Track your consistency and build long-lasting habits
+  - See your current and best streaks for each habit
+
+- **Focus Mode**
+  - Minimize distractions and focus on your daily goals
+
+- **Smart Reminders**
+  - Get timely reminders to complete your habits (browser notifications)
+
+- **Categories & Customization**
+  - Organize habits by category (Health, Study, Work, etc.)
+  - Personalize your experience with avatars and themes
+
+- **Summary Card**
+  - Get a quick overview of your progress and achievements
+
+- **Heatmap Visualization**
+  - See your habit activity as a colorful heatmap
+
+- **Admin Panel**
+  - Secure dashboard for managing users (password protected)
+  - Delete users and view analytics (for project owner)
+
+- **Progressive Web App (PWA)**
+  - **You can also install this to your home screen!**
+  - Works offline and feels like a native app
+
+- **Cloud Sync (Supabase)**
+  - Your data is securely stored and synced in the cloud
+
+- **Mobile Friendly**
+  - Fully responsive design for phones, tablets, and desktops
+
+- **Creator Branding**
+  - Proudly made by M. Pavan Vedesh
+
+---
+
+## How to Use
+1. Open the app in your browser
+2. Add your habits and start tracking
+3. Write daily notes, check your streaks, and view your progress
+4. **To install:** Click the "Install App" button (or use your browser's install option) to add it to your home screen for quick access!
+
+---
+
+Thank you for checking out Habit Tracker 2026. Wishing you a year full of positive habits and achievements!
+
+— M. Pavan Vedesh

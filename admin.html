@@ -987,24 +987,40 @@
                 return null;
             }
 
-            try {
-                // Load Supabase library
-                await new Promise((resolve, reject) => {
-                    if (typeof window.supabase !== 'undefined') {
-                        resolve();
-                        return;
-                    }
-                    const script = document.createElement('script');
-                    script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-                    script.onload = resolve;
-                    script.onerror = reject;
-                    document.head.appendChild(script);
-                });
+            // Return existing client if already initialized
+            if (supabaseClient) {
+                return supabaseClient;
+            }
 
+            try {
+                console.log('[Admin] Loading Supabase library...');
+                
+                // Load Supabase library with timeout
+                await Promise.race([
+                    new Promise((resolve, reject) => {
+                        if (typeof window.supabase !== 'undefined') {
+                            console.log('[Admin] Supabase library already loaded');
+                            resolve();
+                            return;
+                        }
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+                        script.onload = () => {
+                            console.log('[Admin] Supabase library loaded successfully');
+                            resolve();
+                        };
+                        script.onerror = () => reject(new Error('Failed to load Supabase script'));
+                        document.head.appendChild(script);
+                    }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Supabase script load timeout')), 10000))
+                ]);
+
+                console.log('[Admin] Creating Supabase client...');
                 supabaseClient = window.supabase.createClient(
                     SUPABASE_CONFIG.url,
                     SUPABASE_CONFIG.anonKey
                 );
+                console.log('[Admin] Supabase client created successfully');
 
                 return supabaseClient;
             } catch (error) {
@@ -1017,22 +1033,53 @@
          * Load analytics from Supabase
          */
         async function loadAnalytics() {
+            console.log('[Admin] Loading analytics...');
+            
             // Load Supabase analytics
             const client = await initSupabase();
             
             if (client) {
                 try {
-                    const { data, error } = await client
+                    console.log('[Admin] Fetching analytics_summary...');
+                    
+                    // Try the analytics_summary view first
+                    let { data, error } = await client
                         .from('analytics_summary')
                         .select('*')
                         .single();
 
-                    if (data && !error) {
+                    if (error) {
+                        console.warn('[Admin] analytics_summary view failed, trying direct count:', error.message);
+                        
+                        // Fallback: Count users directly from users table
+                        const { data: users, error: usersError } = await client
+                            .from('users')
+                            .select('id, last_active');
+                        
+                        if (!usersError && users) {
+                            const now = new Date();
+                            const today = now.toISOString().split('T')[0];
+                            const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+                            const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
+                            
+                            data = {
+                                total_users: users.length,
+                                daily_active_users: users.filter(u => u.last_active && u.last_active.startsWith(today)).length,
+                                weekly_active_users: users.filter(u => u.last_active && u.last_active >= weekAgo).length,
+                                monthly_active_users: users.filter(u => u.last_active && u.last_active >= monthAgo).length
+                            };
+                            console.log('[Admin] Calculated stats from users table:', data);
+                        }
+                    }
+
+                    if (data) {
+                        console.log('[Admin] Analytics data:', data);
                         document.getElementById('total-users').textContent = data.total_users || 0;
                         document.getElementById('daily-users').textContent = data.daily_active_users || 0;
                         document.getElementById('weekly-users').textContent = data.weekly_active_users || 0;
                         document.getElementById('monthly-users').textContent = data.monthly_active_users || 0;
                     } else {
+                        console.warn('[Admin] No analytics data received');
                         setPlaceholderStats();
                     }
                 } catch (error) {
@@ -1040,6 +1087,7 @@
                     setPlaceholderStats();
                 }
             } else {
+                console.warn('[Admin] No Supabase client available');
                 setPlaceholderStats();
             }
 
@@ -1047,6 +1095,7 @@
             loadLocalStats();
             
             // Load registered users list (admin-only feature)
+            console.log('[Admin] Loading registered users...');
             loadRegisteredUsers();
         }
 
@@ -1071,12 +1120,28 @@
             emptyEl.style.display = 'none';
             infoBarEl.style.display = 'none';
             
+            // Set a timeout to show error if it takes too long
+            const timeoutId = setTimeout(() => {
+                console.warn('[Admin] User loading timeout - showing error state');
+                loadingEl.style.display = 'none';
+                errorEl.innerHTML = `
+                    <p>⏳ Loading is taking too long</p>
+                    <p style="font-size: 0.8rem; margin-top: 8px; opacity: 0.8;">Check your internet connection and try refreshing</p>
+                    <button onclick="loadRegisteredUsers()" style="margin-top: 12px; padding: 8px 16px; background: var(--dark-accent); color: white; border: none; border-radius: 6px; cursor: pointer;">Retry</button>
+                `;
+                errorEl.style.display = 'block';
+            }, 15000); // 15 second timeout
+            
             try {
+                console.log('[Admin] Getting Supabase client for users...');
                 const client = await initSupabase();
                 
                 if (!client) {
+                    clearTimeout(timeoutId);
                     throw new Error('Supabase client not available');
                 }
+                
+                console.log('[Admin] Fetching users from Supabase...');
                 
                 // Fetch all users ordered by last_active (most recent first)
                 // We query the users table directly since RLS allows SELECT
@@ -1085,15 +1150,21 @@
                     .select('id, name, first_visit, last_active')
                     .order('last_active', { ascending: false });
                 
+                clearTimeout(timeoutId);
+                
                 if (error) {
+                    console.error('[Admin] Supabase error:', error);
                     throw error;
                 }
+                
+                console.log('[Admin] Received users:', users ? users.length : 0);
                 
                 // Hide loading
                 loadingEl.style.display = 'none';
                 
                 if (!users || users.length === 0) {
                     // Show empty state
+                    console.log('[Admin] No users found, showing empty state');
                     emptyEl.style.display = 'block';
                     return;
                 }
@@ -1115,6 +1186,11 @@
             } catch (error) {
                 console.error('[Admin] Error loading users:', error);
                 loadingEl.style.display = 'none';
+                errorEl.innerHTML = `
+                    <p>⚠️ Failed to load users from Supabase</p>
+                    <p style="font-size: 0.8rem; margin-top: 8px; opacity: 0.8;">${escapeHtml(error.message || 'Unknown error')}</p>
+                    <button onclick="loadRegisteredUsers()" style="margin-top: 12px; padding: 8px 16px; background: var(--dark-accent); color: white; border: none; border-radius: 6px; cursor: pointer;">Retry</button>
+                `;
                 errorEl.style.display = 'block';
             }
         }
