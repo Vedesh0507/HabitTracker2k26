@@ -23,6 +23,17 @@
     let isInstalled = false;
     let installPromptShown = false;
 
+    // ==================== EARLY EVENT CAPTURE ====================
+    // CRITICAL: Capture beforeinstallprompt IMMEDIATELY, before DOMContentLoaded
+    // This event can fire very early, before the DOM is ready
+    window.addEventListener('beforeinstallprompt', (event) => {
+        // Prevent the default browser prompt
+        event.preventDefault();
+        // Store the event for later use
+        deferredInstallPrompt = event;
+        console.log('[PWA] ✅ Install prompt captured EARLY!');
+    });
+
     // ==================== LOGGING ====================
     function log(...args) {
         if (PWA_CONFIG.debugMode) {
@@ -938,21 +949,29 @@
         // Check if already installed
         checkIfInstalled();
 
-        // Listen for install prompt
+        // Check if we already captured the install prompt (from early listener)
+        if (deferredInstallPrompt) {
+            log('Install prompt was already captured early!');
+            showInstallButton();
+            addPersistentInstallButton();
+        }
+
+        // Listen for install prompt (in case it fires later)
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
         // Listen for successful installation
         window.addEventListener('appinstalled', () => {
             isInstalled = true;
+            deferredInstallPrompt = null;
             hideInstallBanner();
             hidePersistentInstallButton();
-            log('App was installed');
+            log('App was installed successfully!');
         });
 
         // Register service worker
         await registerServiceWorker();
 
-        // Add persistent install button (works for iOS too)
+        // Add persistent install button (works for iOS too, shows instructions)
         setTimeout(() => {
             addPersistentInstallButton();
         }, 2000);
@@ -974,6 +993,7 @@
         }
 
         log('PWA initialized successfully');
+        log('deferredInstallPrompt available:', !!deferredInstallPrompt);
     }
 
     // ==================== START ====================
