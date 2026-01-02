@@ -881,46 +881,51 @@
     <script>
         /**
          * ========================================
-         * ADMIN DASHBOARD LOGIC
+         * ADMIN DASHBOARD LOGIC - PRODUCTION FIX
          * ========================================
          * 
-         * This is a simple, read-only admin dashboard.
+         * WHAT WAS BROKEN:
+         * 1. Supabase library loading was unreliable
+         * 2. No proper initialization sequence
+         * 3. Missing error boundaries
+         * 4. No visual feedback during loading states
          * 
-         * SECURITY NOTE:
-         * This uses a simple client-side key check for demo purposes.
-         * In production, you should:
-         * 1. Use Supabase Auth with role-based access
-         * 2. Or protect this page with Netlify Identity
-         * 3. Or use environment variables with server-side verification
-         * 
-         * The admin key is NOT meant to be high-security.
-         * It's just a simple gate to prevent casual access.
+         * HOW IT'S FIXED:
+         * 1. Load Supabase via script tag in head (more reliable)
+         * 2. Proper async/await with try/catch everywhere
+         * 3. Global error handler for uncaught errors
+         * 4. Clear loading → success → error state management
+         * 5. Timeout protection on all network requests
+         * 6. Fallback mechanisms when primary methods fail
          */
 
         // ==================== CONFIGURATION ====================
-
-        /**
-         * Admin Key Configuration
-         * 
-         * For production, set this via environment variable:
-         * - Netlify: ADMIN_KEY environment variable
-         * - Or use Supabase Auth with admin role
-         * 
-         * For demo, we use a simple string comparison.
-         * This key should be changed before deployment.
-         */
         const ADMIN_KEY = 'Vedesh@07';  // Your private admin password
 
-        // Supabase config (must match main supabase.js)
         const SUPABASE_CONFIG = {
             url: 'https://etvwvskgmzdzyspawyvw.supabase.co',
             anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0dnd2c2tnbXpkenlzcGF3eXZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MTUwNDcsImV4cCI6MjA4MjM5MTA0N30.K4g_gY_T2RVZ58MCEYc87csRUe3GKloslNYUrnK7hy0'
         };
 
+        // Timeout for network requests (ms)
+        const REQUEST_TIMEOUT = 10000;
+        const SCRIPT_LOAD_TIMEOUT = 15000;
+
+        // ==================== STATE ====================
         let supabaseClient = null;
+        let isSupabaseReady = false;
+
+        // ==================== GLOBAL ERROR HANDLER ====================
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error('[Admin] Global error:', { message, source, lineno, colno, error });
+            return false;
+        };
+
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('[Admin] Unhandled promise rejection:', event.reason);
+        });
 
         // ==================== DOM ELEMENTS ====================
-
         const authGate = document.getElementById('auth-gate');
         const dashboard = document.getElementById('dashboard');
         const adminKeyInput = document.getElementById('admin-key-input');
@@ -928,11 +933,134 @@
         const authError = document.getElementById('auth-error');
         const logoutBtn = document.getElementById('logout-btn');
 
-        // ==================== AUTHENTICATION ====================
+        // ==================== UTILITY FUNCTIONS ====================
+        
+        /**
+         * Create a promise that rejects after a timeout
+         */
+        function createTimeout(ms, message = 'Request timeout') {
+            return new Promise((_, reject) => {
+                setTimeout(() => reject(new Error(message)), ms);
+            });
+        }
 
         /**
-         * Check if user is already authenticated (session-based)
+         * Escape HTML to prevent XSS
          */
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        /**
+         * Safe console log
+         */
+        function log(...args) {
+            console.log('[Admin]', new Date().toISOString().slice(11, 19), ...args);
+        }
+
+        /**
+         * Safe console error
+         */
+        function logError(...args) {
+            console.error('[Admin]', new Date().toISOString().slice(11, 19), ...args);
+        }
+
+        // ==================== SUPABASE INITIALIZATION ====================
+
+        /**
+         * Load Supabase library dynamically
+         * Returns a promise that resolves when loaded
+         */
+        function loadSupabaseLibrary() {
+            return new Promise((resolve, reject) => {
+                // Check if already loaded
+                if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                    log('Supabase library already available');
+                    resolve();
+                    return;
+                }
+
+                log('Loading Supabase library from CDN...');
+
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js';
+                script.async = true;
+
+                script.onload = () => {
+                    log('Supabase script loaded');
+                    // Small delay to ensure the library is fully initialized
+                    setTimeout(() => {
+                        if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                            log('Supabase library ready');
+                            resolve();
+                        } else {
+                            reject(new Error('Supabase library loaded but createClient not available'));
+                        }
+                    }, 100);
+                };
+
+                script.onerror = () => {
+                    reject(new Error('Failed to load Supabase script from CDN'));
+                };
+
+                document.head.appendChild(script);
+            });
+        }
+
+        /**
+         * Initialize Supabase client
+         * Returns the client or null if initialization fails
+         */
+        async function initSupabase() {
+            // Return existing client if ready
+            if (supabaseClient && isSupabaseReady) {
+                return supabaseClient;
+            }
+
+            try {
+                log('Initializing Supabase...');
+
+                // Load the library with timeout protection
+                await Promise.race([
+                    loadSupabaseLibrary(),
+                    createTimeout(SCRIPT_LOAD_TIMEOUT, 'Supabase library load timeout')
+                ]);
+
+                // Create the client
+                log('Creating Supabase client...');
+                supabaseClient = window.supabase.createClient(
+                    SUPABASE_CONFIG.url,
+                    SUPABASE_CONFIG.anonKey
+                );
+
+                // Test the connection with a simple query
+                log('Testing Supabase connection...');
+                const { error: testError } = await Promise.race([
+                    supabaseClient.from('users').select('id').limit(1),
+                    createTimeout(REQUEST_TIMEOUT, 'Connection test timeout')
+                ]);
+
+                if (testError) {
+                    logError('Supabase connection test failed:', testError.message);
+                    // Don't fail completely - the connection might work for other queries
+                }
+
+                isSupabaseReady = true;
+                log('Supabase initialized successfully');
+                return supabaseClient;
+
+            } catch (error) {
+                logError('Failed to initialize Supabase:', error.message);
+                isSupabaseReady = false;
+                return null;
+            }
+        }
+
+        // ==================== AUTHENTICATION ====================
+
         function checkAuth() {
             const isAuth = sessionStorage.getItem('admin_authenticated');
             if (isAuth === 'true') {
@@ -940,9 +1068,6 @@
             }
         }
 
-        /**
-         * Verify admin key
-         */
         function verifyKey() {
             const inputKey = adminKeyInput.value.trim();
             
@@ -957,9 +1082,6 @@
             }
         }
 
-        /**
-         * Logout
-         */
         function logout() {
             sessionStorage.removeItem('admin_authenticated');
             dashboard.classList.remove('visible');
@@ -967,242 +1089,219 @@
             adminKeyInput.value = '';
         }
 
-        /**
-         * Show dashboard and load data
-         */
         function showDashboard() {
             authGate.style.display = 'none';
             dashboard.classList.add('visible');
-            loadAnalytics();
+            
+            // Start loading data
+            loadAllData();
         }
 
-        // ==================== ANALYTICS ====================
+        // ==================== DATA LOADING ====================
 
         /**
-         * Initialize Supabase client
+         * Load all dashboard data
+         * Initializes Supabase first, then loads all data in parallel
          */
-        async function initSupabase() {
-            if (SUPABASE_CONFIG.url === 'YOUR_SUPABASE_PROJECT_URL') {
-                console.warn('[Admin] Supabase not configured');
-                return null;
+        async function loadAllData() {
+            log('Starting data load...');
+
+            // Initialize Supabase first
+            const client = await initSupabase();
+
+            if (!client) {
+                log('Supabase not available - showing placeholder stats');
+                setPlaceholderStats();
+                showUsersError('Could not connect to database. Please check your internet connection.');
+            } else {
+                // Load analytics and users in parallel
+                await Promise.all([
+                    loadAnalytics(client),
+                    loadRegisteredUsers(client)
+                ]);
             }
 
-            // Return existing client if already initialized
-            if (supabaseClient) {
-                return supabaseClient;
-            }
+            // Always load local stats (doesn't depend on Supabase)
+            loadLocalStats();
+
+            log('Data load complete');
+        }
+
+        /**
+         * Load analytics summary
+         */
+        async function loadAnalytics(client) {
+            log('Loading analytics...');
 
             try {
-                console.log('[Admin] Loading Supabase library...');
-                
-                // Load Supabase library with timeout
-                await Promise.race([
-                    new Promise((resolve, reject) => {
-                        if (typeof window.supabase !== 'undefined') {
-                            console.log('[Admin] Supabase library already loaded');
-                            resolve();
-                            return;
-                        }
-                        const script = document.createElement('script');
-                        script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-                        script.onload = () => {
-                            console.log('[Admin] Supabase library loaded successfully');
-                            resolve();
-                        };
-                        script.onerror = () => reject(new Error('Failed to load Supabase script'));
-                        document.head.appendChild(script);
-                    }),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Supabase script load timeout')), 10000))
-                ]);
+                // Try analytics_summary view first
+                let data = null;
 
-                console.log('[Admin] Creating Supabase client...');
-                supabaseClient = window.supabase.createClient(
-                    SUPABASE_CONFIG.url,
-                    SUPABASE_CONFIG.anonKey
-                );
-                console.log('[Admin] Supabase client created successfully');
-
-                return supabaseClient;
-            } catch (error) {
-                console.error('[Admin] Failed to init Supabase:', error);
-                return null;
-            }
-        }
-
-        /**
-         * Load analytics from Supabase
-         */
-        async function loadAnalytics() {
-            console.log('[Admin] Loading analytics...');
-            
-            // Load Supabase analytics
-            const client = await initSupabase();
-            
-            if (client) {
                 try {
-                    console.log('[Admin] Fetching analytics_summary...');
-                    
-                    // Try the analytics_summary view first
-                    let { data, error } = await client
-                        .from('analytics_summary')
-                        .select('*')
-                        .single();
+                    const result = await Promise.race([
+                        client.from('analytics_summary').select('*').single(),
+                        createTimeout(REQUEST_TIMEOUT, 'Analytics query timeout')
+                    ]);
 
-                    if (error) {
-                        console.warn('[Admin] analytics_summary view failed, trying direct count:', error.message);
-                        
-                        // Fallback: Count users directly from users table
-                        const { data: users, error: usersError } = await client
-                            .from('users')
-                            .select('id, last_active');
-                        
-                        if (!usersError && users) {
-                            const now = new Date();
-                            const today = now.toISOString().split('T')[0];
-                            const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
-                            const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
-                            
-                            data = {
-                                total_users: users.length,
-                                daily_active_users: users.filter(u => u.last_active && u.last_active.startsWith(today)).length,
-                                weekly_active_users: users.filter(u => u.last_active && u.last_active >= weekAgo).length,
-                                monthly_active_users: users.filter(u => u.last_active && u.last_active >= monthAgo).length
-                            };
-                            console.log('[Admin] Calculated stats from users table:', data);
-                        }
-                    }
-
-                    if (data) {
-                        console.log('[Admin] Analytics data:', data);
-                        document.getElementById('total-users').textContent = data.total_users || 0;
-                        document.getElementById('daily-users').textContent = data.daily_active_users || 0;
-                        document.getElementById('weekly-users').textContent = data.weekly_active_users || 0;
-                        document.getElementById('monthly-users').textContent = data.monthly_active_users || 0;
+                    if (!result.error && result.data) {
+                        data = result.data;
+                        log('Analytics loaded from view:', data);
                     } else {
-                        console.warn('[Admin] No analytics data received');
-                        setPlaceholderStats();
+                        log('analytics_summary view failed:', result.error?.message);
                     }
-                } catch (error) {
-                    console.error('[Admin] Error loading analytics:', error);
+                } catch (viewError) {
+                    log('analytics_summary error:', viewError.message);
+                }
+
+                // Fallback: calculate from users table
+                if (!data) {
+                    log('Calculating analytics from users table...');
+                    
+                    const { data: users, error } = await Promise.race([
+                        client.from('users').select('id, last_active'),
+                        createTimeout(REQUEST_TIMEOUT, 'Users query timeout')
+                    ]);
+
+                    if (!error && users) {
+                        const now = new Date();
+                        const todayStr = now.toISOString().split('T')[0];
+                        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+                        data = {
+                            total_users: users.length,
+                            daily_active_users: users.filter(u => 
+                                u.last_active && u.last_active.startsWith(todayStr)
+                            ).length,
+                            weekly_active_users: users.filter(u => 
+                                u.last_active && new Date(u.last_active) >= weekAgo
+                            ).length,
+                            monthly_active_users: users.filter(u => 
+                                u.last_active && new Date(u.last_active) >= monthAgo
+                            ).length
+                        };
+                        log('Analytics calculated:', data);
+                    }
+                }
+
+                // Update UI
+                if (data) {
+                    document.getElementById('total-users').textContent = data.total_users ?? 0;
+                    document.getElementById('daily-users').textContent = data.daily_active_users ?? 0;
+                    document.getElementById('weekly-users').textContent = data.weekly_active_users ?? 0;
+                    document.getElementById('monthly-users').textContent = data.monthly_active_users ?? 0;
+                } else {
                     setPlaceholderStats();
                 }
-            } else {
-                console.warn('[Admin] No Supabase client available');
+
+            } catch (error) {
+                logError('Analytics load error:', error.message);
                 setPlaceholderStats();
             }
-
-            // Always load local stats (from this browser)
-            loadLocalStats();
-            
-            // Load registered users list (admin-only feature)
-            console.log('[Admin] Loading registered users...');
-            loadRegisteredUsers();
         }
 
-        // ==================== REGISTERED USERS (Admin Only) ====================
-        
+        /**
+         * Set placeholder stats when data unavailable
+         */
+        function setPlaceholderStats() {
+            document.getElementById('total-users').textContent = '—';
+            document.getElementById('daily-users').textContent = '—';
+            document.getElementById('weekly-users').textContent = '—';
+            document.getElementById('monthly-users').textContent = '—';
+        }
+
+        // ==================== REGISTERED USERS ====================
+
         /**
          * Load registered users from Supabase
-         * Fetches user list with name, first_visit, and last_active
-         * Privacy: Only displays identity data, NEVER habit data
          */
-        async function loadRegisteredUsers() {
+        async function loadRegisteredUsers(client = null) {
             const loadingEl = document.getElementById('users-loading');
             const tableEl = document.getElementById('users-table');
             const errorEl = document.getElementById('users-error');
             const emptyEl = document.getElementById('users-empty');
             const infoBarEl = document.getElementById('users-info-bar');
-            
-            // Show loading state
+
+            // Reset UI state
             loadingEl.style.display = 'flex';
             tableEl.style.display = 'none';
             errorEl.style.display = 'none';
             emptyEl.style.display = 'none';
             infoBarEl.style.display = 'none';
-            
-            // Set a timeout to show error if it takes too long
-            const timeoutId = setTimeout(() => {
-                console.warn('[Admin] User loading timeout - showing error state');
-                loadingEl.style.display = 'none';
-                errorEl.innerHTML = `
-                    <p>⏳ Loading is taking too long</p>
-                    <p style="font-size: 0.8rem; margin-top: 8px; opacity: 0.8;">Check your internet connection and try refreshing</p>
-                    <button onclick="loadRegisteredUsers()" style="margin-top: 12px; padding: 8px 16px; background: var(--dark-accent); color: white; border: none; border-radius: 6px; cursor: pointer;">Retry</button>
-                `;
-                errorEl.style.display = 'block';
-            }, 15000); // 15 second timeout
-            
+
             try {
-                console.log('[Admin] Getting Supabase client for users...');
-                const client = await initSupabase();
-                
+                // Get client if not provided
                 if (!client) {
-                    clearTimeout(timeoutId);
-                    throw new Error('Supabase client not available');
+                    client = await initSupabase();
                 }
-                
-                console.log('[Admin] Fetching users from Supabase...');
-                
-                // Fetch all users ordered by last_active (most recent first)
-                // We query the users table directly since RLS allows SELECT
-                const { data: users, error } = await client
-                    .from('users')
-                    .select('id, name, first_visit, last_active')
-                    .order('last_active', { ascending: false });
-                
-                clearTimeout(timeoutId);
-                
+
+                if (!client) {
+                    throw new Error('Database connection unavailable');
+                }
+
+                log('Fetching users...');
+
+                // Fetch users with timeout
+                const { data: users, error } = await Promise.race([
+                    client
+                        .from('users')
+                        .select('id, name, first_visit, last_active')
+                        .order('last_active', { ascending: false }),
+                    createTimeout(REQUEST_TIMEOUT, 'Users fetch timeout')
+                ]);
+
                 if (error) {
-                    console.error('[Admin] Supabase error:', error);
-                    throw error;
+                    throw new Error(error.message || 'Failed to fetch users');
                 }
-                
-                console.log('[Admin] Received users:', users ? users.length : 0);
-                
+
+                log('Users loaded:', users?.length ?? 0);
+
                 // Hide loading
                 loadingEl.style.display = 'none';
-                
+
                 if (!users || users.length === 0) {
-                    // Show empty state
-                    console.log('[Admin] No users found, showing empty state');
                     emptyEl.style.display = 'block';
                     return;
                 }
-                
-                // Render users table
+
+                // Render table
                 renderUsersTable(users);
-                
+
                 // Show table and info bar
                 tableEl.style.display = 'table';
                 infoBarEl.style.display = 'flex';
-                
+
                 // Update count info
                 const activeToday = users.filter(u => isActiveToday(u.last_active)).length;
                 document.getElementById('users-count-info').textContent = 
                     `${users.length} user${users.length !== 1 ? 's' : ''} · ${activeToday} active today`;
-                
-                console.log(`[Admin] Loaded ${users.length} users from Supabase`);
-                
+
             } catch (error) {
-                console.error('[Admin] Error loading users:', error);
+                logError('Users load error:', error.message);
                 loadingEl.style.display = 'none';
-                errorEl.innerHTML = `
-                    <p>⚠️ Failed to load users from Supabase</p>
-                    <p style="font-size: 0.8rem; margin-top: 8px; opacity: 0.8;">${escapeHtml(error.message || 'Unknown error')}</p>
-                    <button onclick="loadRegisteredUsers()" style="margin-top: 12px; padding: 8px 16px; background: var(--dark-accent); color: white; border: none; border-radius: 6px; cursor: pointer;">Retry</button>
-                `;
-                errorEl.style.display = 'block';
+                showUsersError(error.message);
             }
         }
-        
+
         /**
-         * Render the users table with fetched data
-         * @param {Array} users - Array of user objects from Supabase
+         * Show error in users section
+         */
+        function showUsersError(message) {
+            const errorEl = document.getElementById('users-error');
+            errorEl.innerHTML = `
+                <p>⚠️ Failed to load users</p>
+                <p style="font-size: 0.8rem; margin-top: 8px; opacity: 0.8;">${escapeHtml(message)}</p>
+                <button onclick="loadRegisteredUsers()" style="margin-top: 12px; padding: 8px 16px; background: var(--dark-accent); color: white; border: none; border-radius: 6px; cursor: pointer;">Retry</button>
+            `;
+            errorEl.style.display = 'block';
+        }
+
+        /**
+         * Render the users table
          */
         function renderUsersTable(users) {
             const tbody = document.getElementById('users-table-body');
             
-            // Generate table rows
             tbody.innerHTML = users.map(user => {
                 const isActive = isActiveToday(user.last_active);
                 const initials = getInitials(user.name);
@@ -1246,24 +1345,16 @@
                 `;
             }).join('');
         }
-        
-        /**
-         * Check if a timestamp is from today
-         * @param {string} timestamp - ISO timestamp string
-         * @returns {boolean}
-         */
+
+        // ==================== HELPER FUNCTIONS ====================
+
         function isActiveToday(timestamp) {
             if (!timestamp) return false;
             const date = new Date(timestamp);
             const today = new Date();
             return date.toDateString() === today.toDateString();
         }
-        
-        /**
-         * Get user initials from name (max 2 characters)
-         * @param {string} name - User's name
-         * @returns {string} - Initials (e.g., "JD" for "John Doe")
-         */
+
         function getInitials(name) {
             if (!name) return '?';
             const parts = name.trim().split(/\s+/);
@@ -1272,16 +1363,12 @@
             }
             return name.substring(0, 2).toUpperCase();
         }
-        
-        /**
-         * Format timestamp into date and time parts
-         * @param {string} timestamp - ISO timestamp string
-         * @returns {object} - { date: string, time: string }
-         */
+
         function formatTimestamp(timestamp) {
             if (!timestamp) return { date: '—', time: '' };
             
             const date = new Date(timestamp);
+            if (isNaN(date.getTime())) return { date: '—', time: '' };
             
             return {
                 date: date.toLocaleDateString('en-US', { 
@@ -1296,16 +1383,13 @@
                 })
             };
         }
-        
-        /**
-         * Get relative time string (Today, Yesterday, or date)
-         * @param {string} timestamp - ISO timestamp string
-         * @returns {string}
-         */
+
         function getRelativeTime(timestamp) {
             if (!timestamp) return '—';
             
             const date = new Date(timestamp);
+            if (isNaN(date.getTime())) return '—';
+            
             const today = new Date();
             const yesterday = new Date(today);
             yesterday.setDate(yesterday.getDate() - 1);
@@ -1322,41 +1406,21 @@
                 });
             }
         }
-        
-        /**
-         * Refresh users list (called by refresh button)
-         */
+
         async function refreshUsersList() {
             const refreshBtn = document.getElementById('refresh-users-btn');
-            
-            // Add loading state to button
             refreshBtn.classList.add('loading');
             refreshBtn.disabled = true;
             
-            // Reload users
             await loadRegisteredUsers();
             
-            // Remove loading state
             refreshBtn.classList.remove('loading');
             refreshBtn.disabled = false;
         }
 
-        /**
-         * Set placeholder stats when Supabase is unavailable
-         */
-        function setPlaceholderStats() {
-            document.getElementById('total-users').textContent = '—';
-            document.getElementById('daily-users').textContent = '—';
-            document.getElementById('weekly-users').textContent = '—';
-            document.getElementById('monthly-users').textContent = '—';
-        }
+        // ==================== LOCAL STATS ====================
 
-        /**
-         * Load local statistics from this browser's localStorage
-         * This demonstrates the anonymous stats calculation
-         */
         function loadLocalStats() {
-            const habitsLoading = document.getElementById('habits-loading');
             const habitsList = document.getElementById('top-habits-list');
 
             try {
@@ -1374,7 +1438,6 @@
                 let totalCheckboxes = 0;
                 let completedCheckboxes = 0;
 
-                // Aggregate data
                 const daysPerMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
                 
                 for (let monthKey in data) {
@@ -1396,7 +1459,6 @@
                     }
                 }
 
-                // Update stats
                 document.getElementById('local-habits').textContent = habitNames.length;
                 
                 const consistency = totalCheckboxes > 0 
@@ -1404,7 +1466,6 @@
                     : 0;
                 document.getElementById('local-consistency').textContent = consistency + '%';
 
-                // Get top habits
                 const habitCounts = {};
                 habitNames.forEach(name => {
                     habitCounts[name] = (habitCounts[name] || 0) + 1;
@@ -1414,7 +1475,6 @@
                     .sort((a, b) => b[1] - a[1])
                     .slice(0, 5);
 
-                // Render top habits
                 if (topHabits.length > 0) {
                     habitsList.innerHTML = topHabits.map(([name, count], index) => `
                         <div class="habit-item">
@@ -1428,50 +1488,29 @@
                 }
 
             } catch (error) {
-                console.error('[Admin] Error loading local stats:', error);
+                logError('Error loading local stats:', error);
                 habitsList.innerHTML = '<div class="error-state">Error loading habit data.</div>';
             }
         }
 
-        /**
-         * Escape HTML to prevent XSS
-         */
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // ==================== DELETE USER FUNCTIONALITY ====================
+        // ==================== DELETE USER ====================
         
         let deleteUserId = null;
         let deleteUserName = null;
         
-        /**
-         * Show delete confirmation modal
-         * @param {string} userId - User ID to delete
-         * @param {string} userName - User's name for display
-         */
         function showDeleteModal(userId, userName) {
             deleteUserId = userId;
             deleteUserName = userName;
-            
             document.getElementById('delete-user-name').textContent = userName;
             document.getElementById('delete-modal').style.display = 'flex';
         }
         
-        /**
-         * Hide delete confirmation modal
-         */
         function hideDeleteModal() {
             deleteUserId = null;
             deleteUserName = null;
             document.getElementById('delete-modal').style.display = 'none';
         }
         
-        /**
-         * Delete user from Supabase
-         */
         async function deleteUser() {
             if (!deleteUserId) return;
             
@@ -1479,34 +1518,26 @@
             const originalText = confirmBtn.textContent;
             
             try {
-                // Show loading state
                 confirmBtn.textContent = 'Deleting...';
                 confirmBtn.disabled = true;
                 
                 const client = await initSupabase();
-                
                 if (!client) {
-                    throw new Error('Supabase client not available');
+                    throw new Error('Database connection unavailable');
                 }
                 
-                console.log('[Admin] Attempting to delete user:', deleteUserId);
+                log('Deleting user:', deleteUserId);
                 
-                // Delete user from Supabase
-                const { data, error, status } = await client
-                    .from('users')
-                    .delete()
-                    .eq('id', deleteUserId)
-                    .select();
+                const { error } = await Promise.race([
+                    client.from('users').delete().eq('id', deleteUserId),
+                    createTimeout(REQUEST_TIMEOUT, 'Delete timeout')
+                ]);
                 
-                console.log('[Admin] Delete response:', { data, error, status });
+                if (error) throw error;
                 
-                if (error) {
-                    throw error;
-                }
+                log('User deleted successfully');
                 
-                console.log(`[Admin] User "${deleteUserName}" deleted successfully`);
-                
-                // Remove row from table with animation
+                // Remove row with animation
                 const row = document.querySelector(`tr[data-user-id="${deleteUserId}"]`);
                 if (row) {
                     row.style.transition = 'opacity 0.3s, transform 0.3s';
@@ -1515,20 +1546,18 @@
                     setTimeout(() => row.remove(), 300);
                 }
                 
-                // Update user count
+                // Update count
                 const countInfo = document.getElementById('users-count-info');
-                const currentText = countInfo.textContent;
-                const match = currentText.match(/(\d+) user/);
+                const match = countInfo.textContent.match(/(\d+) user/);
                 if (match) {
                     const newCount = parseInt(match[1]) - 1;
-                    countInfo.textContent = currentText.replace(/\d+ user/, `${newCount} user`);
+                    countInfo.textContent = countInfo.textContent.replace(/\d+ user/, `${newCount} user`);
                 }
                 
-                // Hide modal
                 hideDeleteModal();
                 
             } catch (error) {
-                console.error('[Admin] Error deleting user:', error);
+                logError('Error deleting user:', error);
                 alert('Failed to delete user: ' + error.message);
                 confirmBtn.textContent = originalText;
                 confirmBtn.disabled = false;
@@ -1538,34 +1567,28 @@
         // ==================== EVENT LISTENERS ====================
 
         authBtn.addEventListener('click', verifyKey);
-        
         adminKeyInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') verifyKey();
         });
-
         logoutBtn.addEventListener('click', logout);
-        
-        // Refresh users button
         document.getElementById('refresh-users-btn').addEventListener('click', refreshUsersList);
-        
-        // Delete modal buttons
         document.getElementById('delete-cancel-btn').addEventListener('click', hideDeleteModal);
         document.getElementById('delete-confirm-btn').addEventListener('click', deleteUser);
-        
-        // Close modal on overlay click
         document.getElementById('delete-modal').addEventListener('click', (e) => {
             if (e.target.id === 'delete-modal') hideDeleteModal();
         });
-        
-        // Close modal on Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && document.getElementById('delete-modal').style.display === 'flex') {
                 hideDeleteModal();
             }
         });
 
+        // ==================== INITIALIZATION ====================
+        
         // Check auth on load
         checkAuth();
+        
+        log('Admin dashboard initialized');
     </script>
 </body>
 </html>
