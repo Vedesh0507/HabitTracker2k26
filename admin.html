@@ -353,6 +353,37 @@
             to { transform: rotate(360deg); }
         }
         
+        /* Global Loading Overlay - centered spinner for initial load */
+        .global-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--dark-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        
+        .global-loading-overlay .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border-width: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .global-loading-overlay .loading-text {
+            color: var(--dark-text-secondary);
+            font-size: 1rem;
+        }
+        
+        .global-loading-overlay.hidden {
+            display: none;
+        }
+        
         /* Error State */
         .error-state {
             background: rgba(239, 68, 68, 0.1);
@@ -703,6 +734,12 @@
     </style>
 </head>
 <body>
+    <!-- Global Loading Overlay (shown during initial data load) -->
+    <div class="global-loading-overlay" id="global-loading">
+        <div class="loading-spinner"></div>
+        <span class="loading-text">Loading admin data…</span>
+    </div>
+
     <!-- Authentication Gate -->
     <div class="auth-gate" id="auth-gate">
         <div class="auth-box">
@@ -918,12 +955,46 @@
         // ==================== GLOBAL ERROR HANDLER ====================
         window.onerror = function(message, source, lineno, colno, error) {
             console.error('[Admin] Global error:', { message, source, lineno, colno, error });
+            // Hide global loading on error to prevent infinite spinner
+            hideGlobalLoading();
             return false;
         };
 
         window.addEventListener('unhandledrejection', function(event) {
             console.error('[Admin] Unhandled promise rejection:', event.reason);
+            // Hide global loading on unhandled rejection
+            hideGlobalLoading();
         });
+
+        // ==================== GLOBAL LOADING HELPERS ====================
+        
+        /**
+         * Show global loading overlay
+         */
+        function showGlobalLoading() {
+            try {
+                const overlay = document.getElementById('global-loading');
+                if (overlay) {
+                    overlay.classList.remove('hidden');
+                }
+            } catch (e) {
+                console.warn('[Admin] Could not show loading:', e.message);
+            }
+        }
+
+        /**
+         * Hide global loading overlay
+         */
+        function hideGlobalLoading() {
+            try {
+                const overlay = document.getElementById('global-loading');
+                if (overlay) {
+                    overlay.classList.add('hidden');
+                }
+            } catch (e) {
+                console.warn('[Admin] Could not hide loading:', e.message);
+            }
+        }
 
         // ==================== DOM ELEMENTS ====================
         const authGate = document.getElementById('auth-gate');
@@ -1071,11 +1142,19 @@
         function verifyKey() {
             const inputKey = adminKeyInput.value.trim();
             
+            if (!inputKey) {
+                authError.textContent = 'Please enter an admin key.';
+                authError.classList.add('visible');
+                adminKeyInput.focus();
+                return;
+            }
+            
             if (inputKey === ADMIN_KEY) {
                 sessionStorage.setItem('admin_authenticated', 'true');
                 authError.classList.remove('visible');
                 showDashboard();
             } else {
+                authError.textContent = 'Invalid admin key. Access denied.';
                 authError.classList.add('visible');
                 adminKeyInput.value = '';
                 adminKeyInput.focus();
@@ -1093,11 +1172,44 @@
             authGate.style.display = 'none';
             dashboard.classList.add('visible');
             
-            // Start loading data
-            loadAllData();
+            // Show global loading during initial data fetch
+            showGlobalLoading();
+            
+            // Start loading data with a safety timeout
+            loadAllDataSafe();
         }
 
         // ==================== DATA LOADING ====================
+
+        /**
+         * Safe wrapper for loadAllData with timeout protection
+         * Ensures loading state is always resolved
+         */
+        async function loadAllDataSafe() {
+            const MAX_LOAD_TIME = 30000; // 30 seconds max
+            
+            try {
+                // Create a timeout promise
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('Data load timeout')), MAX_LOAD_TIME);
+                });
+                
+                // Race between data load and timeout
+                await Promise.race([
+                    loadAllData(),
+                    timeoutPromise
+                ]);
+                
+            } catch (error) {
+                logError('Data load failed or timed out:', error.message);
+                // Show user-friendly message
+                setPlaceholderStats();
+                showUsersError('Something went wrong. Please refresh the page.');
+            } finally {
+                // Always hide loading overlay
+                hideGlobalLoading();
+            }
+        }
 
         /**
          * Load all dashboard data
@@ -1106,25 +1218,37 @@
         async function loadAllData() {
             log('Starting data load...');
 
-            // Initialize Supabase first
-            const client = await initSupabase();
+            try {
+                // Initialize Supabase first
+                const client = await initSupabase();
 
-            if (!client) {
-                log('Supabase not available - showing placeholder stats');
+                if (!client) {
+                    log('Supabase not available - showing placeholder stats');
+                    setPlaceholderStats();
+                    showUsersError('Could not connect to database. Please check your internet connection.');
+                } else {
+                    // Load analytics and users in parallel with individual error handling
+                    await Promise.allSettled([
+                        loadAnalytics(client).catch(e => {
+                            logError('Analytics load failed:', e.message);
+                            setPlaceholderStats();
+                        }),
+                        loadRegisteredUsers(client).catch(e => {
+                            logError('Users load failed:', e.message);
+                            showUsersError('Failed to load users. Please try again.');
+                        })
+                    ]);
+                }
+
+                // Always load local stats (doesn't depend on Supabase)
+                loadLocalStats();
+
+                log('Data load complete');
+                
+            } catch (error) {
+                logError('Unexpected error in loadAllData:', error.message);
                 setPlaceholderStats();
-                showUsersError('Could not connect to database. Please check your internet connection.');
-            } else {
-                // Load analytics and users in parallel
-                await Promise.all([
-                    loadAnalytics(client),
-                    loadRegisteredUsers(client)
-                ]);
             }
-
-            // Always load local stats (doesn't depend on Supabase)
-            loadLocalStats();
-
-            log('Data load complete');
         }
 
         /**
@@ -1132,6 +1256,13 @@
          */
         async function loadAnalytics(client) {
             log('Loading analytics...');
+
+            // Safety check - ensure client exists
+            if (!client) {
+                console.warn('[Admin] loadAnalytics called without valid client');
+                setPlaceholderStats();
+                return;
+            }
 
             try {
                 // Try analytics_summary view first
@@ -1147,7 +1278,7 @@
                         data = result.data;
                         log('Analytics loaded from view:', data);
                     } else {
-                        log('analytics_summary view failed:', result.error?.message);
+                        log('analytics_summary view failed:', result.error?.message || 'Unknown error');
                     }
                 } catch (viewError) {
                     log('analytics_summary error:', viewError.message);
@@ -1157,39 +1288,50 @@
                 if (!data) {
                     log('Calculating analytics from users table...');
                     
-                    const { data: users, error } = await Promise.race([
-                        client.from('users').select('id, last_active'),
-                        createTimeout(REQUEST_TIMEOUT, 'Users query timeout')
-                    ]);
+                    try {
+                        const { data: users, error } = await Promise.race([
+                            client.from('users').select('id, last_active'),
+                            createTimeout(REQUEST_TIMEOUT, 'Users query timeout')
+                        ]);
 
-                    if (!error && users) {
-                        const now = new Date();
-                        const todayStr = now.toISOString().split('T')[0];
-                        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                        if (!error && users && Array.isArray(users)) {
+                            const now = new Date();
+                            const todayStr = now.toISOString().split('T')[0];
+                            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-                        data = {
-                            total_users: users.length,
-                            daily_active_users: users.filter(u => 
-                                u.last_active && u.last_active.startsWith(todayStr)
-                            ).length,
-                            weekly_active_users: users.filter(u => 
-                                u.last_active && new Date(u.last_active) >= weekAgo
-                            ).length,
-                            monthly_active_users: users.filter(u => 
-                                u.last_active && new Date(u.last_active) >= monthAgo
-                            ).length
-                        };
-                        log('Analytics calculated:', data);
+                            data = {
+                                total_users: users.length,
+                                daily_active_users: users.filter(u => 
+                                    u && u.last_active && u.last_active.startsWith(todayStr)
+                                ).length,
+                                weekly_active_users: users.filter(u => 
+                                    u && u.last_active && new Date(u.last_active) >= weekAgo
+                                ).length,
+                                monthly_active_users: users.filter(u => 
+                                    u && u.last_active && new Date(u.last_active) >= monthAgo
+                                ).length
+                            };
+                            log('Analytics calculated:', data);
+                        } else {
+                            console.warn('[Admin] Users query returned invalid data:', error?.message);
+                        }
+                    } catch (fallbackError) {
+                        console.warn('[Admin] Analytics fallback failed:', fallbackError.message);
                     }
                 }
 
-                // Update UI
+                // Update UI - always check elements exist
                 if (data) {
-                    document.getElementById('total-users').textContent = data.total_users ?? 0;
-                    document.getElementById('daily-users').textContent = data.daily_active_users ?? 0;
-                    document.getElementById('weekly-users').textContent = data.weekly_active_users ?? 0;
-                    document.getElementById('monthly-users').textContent = data.monthly_active_users ?? 0;
+                    const totalEl = document.getElementById('total-users');
+                    const dailyEl = document.getElementById('daily-users');
+                    const weeklyEl = document.getElementById('weekly-users');
+                    const monthlyEl = document.getElementById('monthly-users');
+                    
+                    if (totalEl) totalEl.textContent = data.total_users ?? 0;
+                    if (dailyEl) dailyEl.textContent = data.daily_active_users ?? 0;
+                    if (weeklyEl) weeklyEl.textContent = data.weekly_active_users ?? 0;
+                    if (monthlyEl) monthlyEl.textContent = data.monthly_active_users ?? 0;
                 } else {
                     setPlaceholderStats();
                 }
@@ -1221,6 +1363,12 @@
             const errorEl = document.getElementById('users-error');
             const emptyEl = document.getElementById('users-empty');
             const infoBarEl = document.getElementById('users-info-bar');
+
+            // Safety check - ensure DOM elements exist
+            if (!loadingEl || !tableEl || !errorEl || !emptyEl || !infoBarEl) {
+                console.error('[Admin] Users table DOM elements not found');
+                return;
+            }
 
             // Reset UI state
             loadingEl.style.display = 'flex';
@@ -1259,7 +1407,16 @@
                 // Hide loading
                 loadingEl.style.display = 'none';
 
-                if (!users || users.length === 0) {
+                // Check if data is valid array
+                if (!users || !Array.isArray(users)) {
+                    console.warn('[Admin] Users data is not a valid array');
+                    emptyEl.textContent = 'No users found yet.';
+                    emptyEl.style.display = 'block';
+                    return;
+                }
+
+                if (users.length === 0) {
+                    emptyEl.textContent = 'No users found yet.';
                     emptyEl.style.display = 'block';
                     return;
                 }
@@ -1272,14 +1429,14 @@
                 infoBarEl.style.display = 'flex';
 
                 // Update count info
-                const activeToday = users.filter(u => isActiveToday(u.last_active)).length;
+                const activeToday = users.filter(u => u && isActiveToday(u.last_active)).length;
                 document.getElementById('users-count-info').textContent = 
                     `${users.length} user${users.length !== 1 ? 's' : ''} · ${activeToday} active today`;
 
             } catch (error) {
                 logError('Users load error:', error.message);
                 loadingEl.style.display = 'none';
-                showUsersError(error.message);
+                showUsersError(error.message || 'Something went wrong. Please refresh.');
             }
         }
 
@@ -1302,48 +1459,71 @@
         function renderUsersTable(users) {
             const tbody = document.getElementById('users-table-body');
             
-            tbody.innerHTML = users.map(user => {
-                const isActive = isActiveToday(user.last_active);
-                const initials = getInitials(user.name);
-                const firstVisit = formatTimestamp(user.first_visit);
-                const lastActive = formatTimestamp(user.last_active);
-                const lastActiveRelative = getRelativeTime(user.last_active);
-                
-                return `
-                    <tr data-user-id="${user.id}">
-                        <td>
-                            <div class="user-name-cell">
-                                <div class="user-avatar">${escapeHtml(initials)}</div>
-                                <span class="user-name">${escapeHtml(user.name)}</span>
-                            </div>
-                        </td>
-                        <td class="timestamp-cell">
-                            <span class="timestamp-date">${firstVisit.date}</span>
-                            <span class="timestamp-time">${firstVisit.time}</span>
-                        </td>
-                        <td class="timestamp-cell">
-                            <span class="timestamp-date">${lastActiveRelative}</span>
-                            <span class="timestamp-time">${lastActive.time}</span>
-                        </td>
-                        <td>
-                            <span class="activity-badge ${isActive ? 'active' : 'inactive'}">
-                                <span class="activity-dot"></span>
-                                ${isActive ? 'Active Today' : 'Inactive'}
-                            </span>
-                        </td>
-                        <td>
-                            <button class="delete-user-btn" onclick="showDeleteModal('${user.id}', '${escapeHtml(user.name).replace(/'/g, "\\'")}')"
-                                    title="Delete ${escapeHtml(user.name)}">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-                                    <line x1="10" y1="11" x2="10" y2="17"/>
-                                    <line x1="14" y1="11" x2="14" y2="17"/>
-                                </svg>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+            // Safety check
+            if (!tbody) {
+                console.error('[Admin] Users table body element not found');
+                return;
+            }
+            
+            // Validate users array
+            if (!users || !Array.isArray(users) || users.length === 0) {
+                console.warn('[Admin] No valid users data to render');
+                tbody.innerHTML = '';
+                return;
+            }
+            
+            try {
+                tbody.innerHTML = users.map(user => {
+                    // Safe access with defaults
+                    if (!user) return '';
+                    
+                    const userId = user.id || '';
+                    const userName = user.name || 'Unknown';
+                    const isActive = isActiveToday(user.last_active);
+                    const initials = getInitials(userName);
+                    const firstVisit = formatTimestamp(user.first_visit);
+                    const lastActive = formatTimestamp(user.last_active);
+                    const lastActiveRelative = getRelativeTime(user.last_active);
+                    
+                    return `
+                        <tr data-user-id="${escapeHtml(userId)}">
+                            <td>
+                                <div class="user-name-cell">
+                                    <div class="user-avatar">${escapeHtml(initials)}</div>
+                                    <span class="user-name">${escapeHtml(userName)}</span>
+                                </div>
+                            </td>
+                            <td class="timestamp-cell">
+                                <span class="timestamp-date">${firstVisit.date}</span>
+                                <span class="timestamp-time">${firstVisit.time}</span>
+                            </td>
+                            <td class="timestamp-cell">
+                                <span class="timestamp-date">${lastActiveRelative}</span>
+                                <span class="timestamp-time">${lastActive.time}</span>
+                            </td>
+                            <td>
+                                <span class="activity-badge ${isActive ? 'active' : 'inactive'}">
+                                    <span class="activity-dot"></span>
+                                    ${isActive ? 'Active Today' : 'Inactive'}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="delete-user-btn" onclick="showDeleteModal('${escapeHtml(userId)}', '${escapeHtml(userName).replace(/'/g, "\\'")}')"
+                                        title="Delete ${escapeHtml(userName)}">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                        <line x1="10" y1="11" x2="10" y2="17"/>
+                                        <line x1="14" y1="11" x2="14" y2="17"/>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).filter(row => row !== '').join('');
+            } catch (renderError) {
+                console.error('[Admin] Error rendering users table:', renderError);
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--error);">Error rendering user data</td></tr>';
+            }
         }
 
         // ==================== HELPER FUNCTIONS ====================
@@ -1584,6 +1764,9 @@
         });
 
         // ==================== INITIALIZATION ====================
+        
+        // Hide global loading initially (auth gate shown first)
+        hideGlobalLoading();
         
         // Check auth on load
         checkAuth();
