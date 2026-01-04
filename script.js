@@ -3862,3 +3862,87 @@ function initCalendar2026() {
 
 // ==================== INITIALIZE APP ====================
 document.addEventListener('DOMContentLoaded', init);
+// ==========================================
+// ONBOARDING POPUP (First-Time Users Only)
+// Self-contained module - does not modify existing code
+// Uses localStorage key: onboardingSeen2026
+// ==========================================
+
+(function initOnboardingPopup() {
+    const ONBOARDING_KEY = 'onboardingSeen2026';
+    
+    // Check if user has already seen onboarding
+    function hasSeenOnboarding() {
+        return localStorage.getItem(ONBOARDING_KEY) === 'true';
+    }
+    
+    // Mark onboarding as seen
+    function markOnboardingSeen() {
+        try {
+            localStorage.setItem(ONBOARDING_KEY, 'true');
+        } catch (e) {
+            console.warn('[Onboarding] Could not save to localStorage');
+        }
+    }
+    
+    // Close the onboarding popup
+    function closeOnboarding() {
+        const overlay = document.getElementById('onboarding-overlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+            markOnboardingSeen();
+        }
+    }
+    
+    // Show onboarding popup
+    function showOnboarding() {
+        const overlay = document.getElementById('onboarding-overlay');
+        if (overlay) {
+            // Small delay for smooth appearance after page load
+            setTimeout(function() {
+                overlay.classList.add('active');
+            }, 500);
+        }
+    }
+    
+    // Initialize onboarding
+    function init() {
+        // Exit early if user has already seen onboarding
+        if (hasSeenOnboarding()) {
+            return;
+        }
+        
+        // Attach click handler to the start button
+        const startBtn = document.getElementById('onboarding-start-btn');
+        if (startBtn) {
+            startBtn.addEventListener('click', closeOnboarding);
+        }
+        
+        // Allow clicking overlay background to close
+        const overlay = document.getElementById('onboarding-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) {
+                    closeOnboarding();
+                }
+            });
+        }
+        
+        // Allow Escape key to close
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && overlay && overlay.classList.contains('active')) {
+                closeOnboarding();
+            }
+        });
+        
+        // Show the onboarding popup
+        showOnboarding();
+    }
+    
+    // Run when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();

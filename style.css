@@ -6745,3 +6745,198 @@ button.daily-space-card,
         animation: none;
     }
 }
+/* ==========================================
+   ONBOARDING POPUP STYLES
+   First-time user welcome modal
+   ========================================== */
+
+.onboarding-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    padding: 20px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+.onboarding-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.onboarding-modal {
+    background: linear-gradient(145deg, #1a1a2e 0%, #16162a 100%);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 24px;
+    width: 100%;
+    max-width: 420px;
+    overflow: hidden;
+    box-shadow: 
+        0 25px 60px rgba(0, 0, 0, 0.5),
+        0 0 40px rgba(139, 92, 246, 0.15);
+    transform: translateY(30px) scale(0.95);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.onboarding-overlay.active .onboarding-modal {
+    transform: translateY(0) scale(1);
+}
+
+.onboarding-header {
+    text-align: center;
+    padding: 32px 24px 20px;
+    background: linear-gradient(180deg, rgba(139, 92, 246, 0.1) 0%, transparent 100%);
+}
+
+.onboarding-emoji {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 16px;
+}
+
+.onboarding-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 8px 0;
+    background: linear-gradient(135deg, #ffffff 0%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.onboarding-subtitle {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0;
+}
+
+.onboarding-body {
+    padding: 24px;
+}
+
+.onboarding-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.onboarding-steps li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.onboarding-steps li:last-child {
+    border-bottom: none;
+}
+
+.step-icon {
+    font-size: 1.3rem;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(139, 92, 246, 0.15);
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+
+.step-text {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.4;
+}
+
+.onboarding-footer {
+    padding: 20px 24px 28px;
+}
+
+.onboarding-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    border: none;
+    border-radius: 14px;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+}
+
+.onboarding-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 30px rgba(139, 92, 246, 0.5);
+}
+
+.onboarding-btn:active {
+    transform: translateY(0);
+}
+
+.onboarding-btn svg {
+    transition: transform 0.2s ease;
+}
+
+.onboarding-btn:hover svg {
+    transform: translateX(4px);
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 480px) {
+    .onboarding-modal {
+        max-width: 100%;
+        border-radius: 20px;
+    }
+    
+    .onboarding-header {
+        padding: 28px 20px 16px;
+    }
+    
+    .onboarding-emoji {
+        font-size: 40px;
+    }
+    
+    .onboarding-title {
+        font-size: 1.3rem;
+    }
+    
+    .onboarding-body {
+        padding: 20px;
+    }
+    
+    .onboarding-steps li {
+        padding: 12px 0;
+    }
+    
+    .step-text {
+        font-size: 0.9rem;
+    }
+    
+    .onboarding-footer {
+        padding: 16px 20px 24px;
+    }
+    
+    .onboarding-btn {
+        padding: 14px 20px;
+        font-size: 0.95rem;
+    }
+}
