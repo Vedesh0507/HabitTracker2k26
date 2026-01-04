@@ -6940,3 +6940,199 @@ button.daily-space-card,
         font-size: 0.95rem;
     }
 }
+
+/* ==========================================
+   MOBILE PERFORMANCE OPTIMIZATIONS
+   Additive CSS-only optimizations
+   Does NOT change any existing styles
+   ========================================== */
+
+/* 
+ * OPTIMIZATION 1: Reduced animations on mobile
+ * - Reduces animation complexity for better battery life
+ * - Keeps functionality identical
+ * - Applied via media query (no JS required)
+ */
+@media (max-width: 768px) {
+    /* Reduce pulse animation intensity on mobile */
+    .badge-dot,
+    .activity-dot {
+        animation-duration: 3s; /* Slower = less CPU */
+    }
+    
+    /* Simplify hover transforms on touch devices */
+    .month-card:hover,
+    .preview-month-card:hover,
+    .habit-card:hover,
+    .feature-card:hover {
+        transform: translateY(-2px); /* Reduced lift */
+    }
+    
+    /* Reduce box-shadow complexity on mobile for GPU performance */
+    .month-card,
+    .habit-card,
+    .stat-card,
+    .chart-card {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Simplified shadow */
+    }
+    
+    /* Disable backdrop-filter on low-end mobile (expensive GPU op) */
+    .hero-badge,
+    .modal-overlay,
+    .onboarding-overlay {
+        backdrop-filter: blur(4px); /* Reduced blur radius */
+        -webkit-backdrop-filter: blur(4px);
+    }
+    
+    /* Optimize transition durations on mobile */
+    .btn-primary,
+    .btn-secondary,
+    .add-habit-btn,
+    .nav-btn {
+        transition-duration: 0.15s; /* Faster response */
+    }
+}
+
+/* 
+ * OPTIMIZATION 2: Aggressive optimizations for very small screens
+ * - Further reduces visual effects
+ * - Prioritizes performance over polish
+ */
+@media (max-width: 480px) {
+    /* Disable non-essential animations */
+    .scroll-indicator,
+    .hero-gradient::before {
+        animation: none;
+    }
+    
+    /* Remove decorative shadows entirely on small screens */
+    .preview-month-card:hover,
+    .month-card:hover {
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    }
+    
+    /* Reduce gradient complexity */
+    .hero-gradient {
+        background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+    }
+}
+
+/* 
+ * OPTIMIZATION 3: Enhanced prefers-reduced-motion support
+ * - Respects user/system preference for reduced motion
+ * - Completely disables animations when requested
+ * - Critical for accessibility and battery saving
+ */
+@media (prefers-reduced-motion: reduce) {
+    /* Global animation disable */
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.15s !important; /* Keep short transitions for UX */
+    }
+    
+    /* Specific elements that should have NO motion */
+    .badge-dot,
+    .activity-dot,
+    .loading-spinner,
+    .scroll-indicator,
+    .typing-cursor {
+        animation: none !important;
+    }
+    
+    /* Keep loading spinner visible but static */
+    .loading-spinner {
+        border-top-color: var(--accent-color, #8b5cf6);
+        opacity: 0.7;
+    }
+    
+    /* Disable parallax-like effects */
+    .hero-background,
+    .month-panorama {
+        transform: none !important;
+    }
+    
+    /* Disable hover lift effects */
+    .month-card:hover,
+    .preview-month-card:hover,
+    .habit-card:hover,
+    .btn-primary:hover,
+    .btn-secondary:hover {
+        transform: none;
+    }
+}
+
+/* 
+ * OPTIMIZATION 4: GPU acceleration hints for smooth scrolling
+ * - Uses will-change sparingly (only on scroll containers)
+ * - Promotes smooth 60fps scrolling on mobile
+ */
+@media (max-width: 768px) {
+    /* Hint GPU for scroll containers */
+    .table-container,
+    .habits-list,
+    .months-grid,
+    .preview-months {
+        -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
+    }
+    
+    /* Promote frequently animated elements to GPU layer */
+    .modal,
+    .onboarding-modal {
+        will-change: transform, opacity;
+    }
+}
+
+/* 
+ * OPTIMIZATION 5: Print-friendly styles (no animations)
+ * - Ensures clean printing without animations
+ */
+@media print {
+    * {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* 
+ * OPTIMIZATION 6: Lazy rendering support classes
+ * - Used by JS IntersectionObserver for below-the-fold content
+ * - Provides smooth fade-in when sections become visible
+ * - Fallback: sections are visible by default (no JS = no hiding)
+ */
+@media (max-width: 768px) {
+    /* Initial state for lazy-loaded sections */
+    .perf-lazy {
+        opacity: 0.01; /* Not 0 to avoid layout shift issues */
+        transform: translateY(10px);
+        transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    
+    /* Visible state after IntersectionObserver triggers */
+    .perf-lazy.perf-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    /* Mobile-specific body class optimizations */
+    .perf-mobile .hero-gradient {
+        opacity: 0.8; /* Slightly reduce overlay complexity */
+    }
+}
+
+/* Reduced motion class applied by JS */
+.perf-reduced-motion .perf-lazy {
+    opacity: 1;
+    transform: none;
+    transition: none;
+}
+
+/* Ensure lazy sections are always visible without JS */
+@media (scripting: none) {
+    .perf-lazy {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}

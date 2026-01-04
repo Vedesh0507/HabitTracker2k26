@@ -3946,3 +3946,258 @@ document.addEventListener('DOMContentLoaded', init);
         init();
     }
 })();
+
+// ==========================================
+// MOBILE PERFORMANCE OPTIMIZATIONS
+// Self-contained module - does not modify existing code
+// All optimizations are additive with safe fallbacks
+// ==========================================
+
+(function initMobilePerformanceOptimizations() {
+    'use strict';
+    
+    // ==================== FEATURE DETECTION ====================
+    
+    /**
+     * Check if device is mobile (screen width < 768px)
+     * @returns {boolean}
+     */
+    function isMobileDevice() {
+        try {
+            return window.innerWidth < 768;
+        } catch (e) {
+            return false; // Safe fallback
+        }
+    }
+    
+    /**
+     * Check if user prefers reduced motion
+     * @returns {boolean}
+     */
+    function prefersReducedMotion() {
+        try {
+            return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        } catch (e) {
+            return false; // Safe fallback
+        }
+    }
+    
+    /**
+     * Check if IntersectionObserver is supported
+     * @returns {boolean}
+     */
+    function supportsIntersectionObserver() {
+        return typeof IntersectionObserver !== 'undefined';
+    }
+    
+    /**
+     * Check if requestIdleCallback is supported
+     * @returns {boolean}
+     */
+    function supportsIdleCallback() {
+        return typeof requestIdleCallback !== 'undefined';
+    }
+    
+    // ==================== UTILITY FUNCTIONS ====================
+    
+    /**
+     * Safe requestIdleCallback wrapper with fallback
+     * Schedules low-priority work when browser is idle
+     * @param {Function} callback - Function to execute
+     * @param {Object} options - Options with timeout
+     */
+    function scheduleIdleWork(callback, options = { timeout: 2000 }) {
+        try {
+            if (supportsIdleCallback()) {
+                requestIdleCallback(callback, options);
+            } else {
+                // Fallback: setTimeout with longer delay
+                setTimeout(callback, 100);
+            }
+        } catch (e) {
+            // Final fallback: run immediately
+            console.warn('[Perf] Idle callback failed, running immediately');
+            callback();
+        }
+    }
+    
+    /**
+     * Debounce function to limit execution frequency
+     * @param {Function} func - Function to debounce
+     * @param {number} wait - Wait time in ms
+     * @returns {Function}
+     */
+    function debounce(func, wait = 150) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func.apply(this, args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    // ==================== LAZY RENDERING ====================
+    
+    /**
+     * Initialize lazy rendering for below-the-fold sections
+     * Uses IntersectionObserver to defer rendering of non-visible content
+     */
+    function initLazyRendering() {
+        // Skip if IntersectionObserver not supported
+        if (!supportsIntersectionObserver()) {
+            console.log('[Perf] IntersectionObserver not supported, skipping lazy rendering');
+            return;
+        }
+        
+        // Skip on desktop (not needed)
+        if (!isMobileDevice()) {
+            return;
+        }
+        
+        try {
+            // Sections that can be lazily revealed (non-critical)
+            const lazySelectors = [
+                '.features-section',
+                '.purpose-section',
+                '.final-cta',
+                '.progress-section'
+            ];
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // Add visible class for CSS transitions
+                        entry.target.classList.add('perf-visible');
+                        // Stop observing once visible
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, {
+                rootMargin: '50px', // Start loading slightly before visible
+                threshold: 0.1
+            });
+            
+            // Observe each lazy section
+            lazySelectors.forEach(selector => {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(el => {
+                    if (el) {
+                        // Add initial hidden state
+                        el.classList.add('perf-lazy');
+                        observer.observe(el);
+                    }
+                });
+            });
+            
+            console.log('[Perf] Lazy rendering initialized');
+            
+        } catch (e) {
+            console.warn('[Perf] Lazy rendering setup failed:', e.message);
+            // Fallback: ensure all sections are visible
+            document.querySelectorAll('.perf-lazy').forEach(el => {
+                el.classList.add('perf-visible');
+            });
+        }
+    }
+    
+    // ==================== SCROLL PERFORMANCE ====================
+    
+    /**
+     * Optimize scroll handlers on mobile
+     * Adds passive listeners and debouncing
+     */
+    function initScrollOptimizations() {
+        if (!isMobileDevice()) return;
+        
+        try {
+            // Add CSS class for mobile-specific optimizations
+            document.body.classList.add('perf-mobile');
+            
+            // Debounced resize handler (prevents layout thrashing)
+            const handleResize = debounce(() => {
+                // Update mobile class on resize
+                if (isMobileDevice()) {
+                    document.body.classList.add('perf-mobile');
+                } else {
+                    document.body.classList.remove('perf-mobile');
+                }
+            }, 250);
+            
+            window.addEventListener('resize', handleResize, { passive: true });
+            
+            console.log('[Perf] Scroll optimizations initialized');
+            
+        } catch (e) {
+            console.warn('[Perf] Scroll optimization failed:', e.message);
+        }
+    }
+    
+    // ==================== REDUCED MOTION ====================
+    
+    /**
+     * Apply reduced motion preferences dynamically
+     * Adds CSS class when user prefers reduced motion
+     */
+    function initReducedMotionSupport() {
+        try {
+            // Check initial preference
+            if (prefersReducedMotion()) {
+                document.body.classList.add('perf-reduced-motion');
+            }
+            
+            // Listen for preference changes
+            const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+            
+            const handleChange = (e) => {
+                if (e.matches) {
+                    document.body.classList.add('perf-reduced-motion');
+                } else {
+                    document.body.classList.remove('perf-reduced-motion');
+                }
+            };
+            
+            // Modern browsers
+            if (mediaQuery.addEventListener) {
+                mediaQuery.addEventListener('change', handleChange);
+            } else if (mediaQuery.addListener) {
+                // Legacy Safari
+                mediaQuery.addListener(handleChange);
+            }
+            
+            console.log('[Perf] Reduced motion support initialized');
+            
+        } catch (e) {
+            console.warn('[Perf] Reduced motion setup failed:', e.message);
+        }
+    }
+    
+    // ==================== INITIALIZATION ====================
+    
+    /**
+     * Initialize all performance optimizations
+     * Runs non-critical optimizations during idle time
+     */
+    function init() {
+        // Critical: Reduced motion (affects UX immediately)
+        initReducedMotionSupport();
+        
+        // Non-critical: Schedule for idle time
+        scheduleIdleWork(() => {
+            initScrollOptimizations();
+            initLazyRendering();
+            console.log('[Perf] Mobile performance optimizations complete');
+        });
+    }
+    
+    // Run when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        // DOM already loaded, but schedule for next idle period
+        scheduleIdleWork(init, { timeout: 1000 });
+    }
+    
+})();
