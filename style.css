@@ -7138,63 +7138,105 @@ button.daily-space-card,
 }
 
 /* ==========================================
-   Mobile habit name wrap fix
-   Allows long habit names to wrap on mobile
+   Mobile habit name readability fix
+   Makes habit names clearly readable on mobile
    without breaking existing layout
    ========================================== */
 
 @media (max-width: 768px) {
-    /* Override ellipsis truncation - allow text wrapping */
-    .habit-name-text {
-        white-space: normal;          /* Allow wrapping */
-        word-break: break-word;       /* Break long words */
-        overflow-wrap: anywhere;      /* Wrap anywhere if needed */
-        text-overflow: clip;          /* Remove ellipsis */
-        max-width: 100px;             /* Slightly wider for readability */
-        line-height: 1.3;             /* Better line spacing for wrapped text */
-        display: -webkit-box;         /* Limit to 2 lines max */
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-    
-    /* Increase first column width to accommodate wrapped text */
+    /* Increase first column width for habit names */
     .habit-table th:first-child,
     .habit-table td:first-child {
-        min-width: 120px;
-        padding-top: 10px;
-        padding-bottom: 10px;
+        min-width: 140px !important;
+        max-width: 160px !important;
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+    }
+    
+    /* Override ellipsis truncation - allow text wrapping */
+    .habit-name-text {
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow-wrap: anywhere !important;
+        text-overflow: clip !important;
+        max-width: 110px !important;
+        line-height: 1.35 !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden !important;
+        font-size: 0.72rem !important;
+    }
+    
+    /* Reduce day checkbox columns slightly */
+    .habit-table .date-cell {
+        min-width: 28px;
+        padding: 4px 2px !important;
+    }
+    
+    .habit-checkbox {
+        width: 24px !important;
+        height: 24px !important;
     }
     
     /* Ensure habit name cell aligns properly with wrapped text */
     .habit-name-cell {
-        align-items: flex-start;      /* Top-align for multi-line */
-        min-height: 36px;             /* Minimum height for wrapped text */
+        align-items: flex-start !important;
+        min-height: 38px;
+        flex-wrap: nowrap;
     }
     
-    /* Keep delete button aligned to top when text wraps */
-    .delete-habit-btn {
+    /* Keep icons compact */
+    .habit-category-tag {
+        width: 16px !important;
+        height: 16px !important;
+        font-size: 0.65rem !important;
+        flex-shrink: 0;
+    }
+    
+    /* Keep delete/edit buttons aligned */
+    .delete-habit-btn,
+    .edit-habit-btn {
         align-self: flex-start;
         margin-top: 2px;
+        flex-shrink: 0;
     }
 }
 
-/* Extra small screens - more generous wrapping */
+/* Extra small screens (≤480px) - more readable names */
 @media (max-width: 480px) {
-    .habit-name-text {
-        max-width: 85px;              /* Allow more width on very small screens */
-        font-size: 0.7rem;            /* Slightly smaller font */
-        -webkit-line-clamp: 3;        /* Allow up to 3 lines on tiny screens */
-    }
-    
     .habit-table th:first-child,
     .habit-table td:first-child {
-        min-width: 100px;
-        padding-top: 8px;
-        padding-bottom: 8px;
+        min-width: 120px !important;
+        max-width: 140px !important;
+    }
+    
+    .habit-name-text {
+        max-width: 95px !important;
+        font-size: 0.68rem !important;
+        -webkit-line-clamp: 2;
+        line-height: 1.3 !important;
+    }
+    
+    /* Smaller checkboxes on tiny screens */
+    .habit-table .date-cell {
+        min-width: 26px;
+        padding: 3px 1px !important;
+    }
+    
+    .habit-checkbox {
+        width: 22px !important;
+        height: 22px !important;
     }
     
     .habit-name-cell {
-        min-height: 40px;             /* Taller for 3 lines */
+        min-height: 36px;
+        gap: 3px !important;
+    }
+    
+    .habit-category-tag {
+        width: 14px !important;
+        height: 14px !important;
+        font-size: 0.6rem !important;
     }
 }
