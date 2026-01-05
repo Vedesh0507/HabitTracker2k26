@@ -7136,3 +7136,65 @@ button.daily-space-card,
         transform: none !important;
     }
 }
+
+/* ==========================================
+   Mobile habit name wrap fix
+   Allows long habit names to wrap on mobile
+   without breaking existing layout
+   ========================================== */
+
+@media (max-width: 768px) {
+    /* Override ellipsis truncation - allow text wrapping */
+    .habit-name-text {
+        white-space: normal;          /* Allow wrapping */
+        word-break: break-word;       /* Break long words */
+        overflow-wrap: anywhere;      /* Wrap anywhere if needed */
+        text-overflow: clip;          /* Remove ellipsis */
+        max-width: 100px;             /* Slightly wider for readability */
+        line-height: 1.3;             /* Better line spacing for wrapped text */
+        display: -webkit-box;         /* Limit to 2 lines max */
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    /* Increase first column width to accommodate wrapped text */
+    .habit-table th:first-child,
+    .habit-table td:first-child {
+        min-width: 120px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+    
+    /* Ensure habit name cell aligns properly with wrapped text */
+    .habit-name-cell {
+        align-items: flex-start;      /* Top-align for multi-line */
+        min-height: 36px;             /* Minimum height for wrapped text */
+    }
+    
+    /* Keep delete button aligned to top when text wraps */
+    .delete-habit-btn {
+        align-self: flex-start;
+        margin-top: 2px;
+    }
+}
+
+/* Extra small screens - more generous wrapping */
+@media (max-width: 480px) {
+    .habit-name-text {
+        max-width: 85px;              /* Allow more width on very small screens */
+        font-size: 0.7rem;            /* Slightly smaller font */
+        -webkit-line-clamp: 3;        /* Allow up to 3 lines on tiny screens */
+    }
+    
+    .habit-table th:first-child,
+    .habit-table td:first-child {
+        min-width: 100px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+    
+    .habit-name-cell {
+        min-height: 40px;             /* Taller for 3 lines */
+    }
+}
